@@ -1,0 +1,107 @@
+# Tech Stack
+
+| Concern | Choice |
+|---------|--------|
+| Language | **TypeScript** (strict mode) end to end |
+| Web framework | **Next.js** (App Router) — UI pages + Route Handlers for the HTTP API |
+| Database | **MongoDB** |
+| DB access | Official `mongodb` Node.js driver, with **Zod** schemas for validation at the boundaries |
+| Testing | **Vitest** (unit + integration); integration tests run against a real MongoDB container |
+| Runtime / packaging | **Docker** + **Docker Compose** (`app` + `mongo` services) |
+| Package manager | npm |
+| Lint / format | ESLint (Next.js config) + Prettier |
+
+## Architecture
+
+```
+src/
+  domain/        # pure evaluator + types, no I/O (hashing, rule ordering)
+  data/          # MongoDB repositories (flags, sticky assignments)
+  app/           # Next.js App Router: admin UI pages
+  app/api/       # Route Handlers: flag CRUD + evaluation endpoint
+```
+
+- **Domain is pure**: `evaluate(flag, user, cohorts, stickyValue?) -> { enabled, reason, persist? }`.
+  No database or framework imports, so it's trivially unit-testable.
+- **Data layer** wraps MongoDB behind small repository functions (flags, assignments, audit).
+- **API layer** composes them: load flag → load sticky → evaluate → persist sticky if needed.
+
+## Data model (MongoDB)
+
+`flags`
+```ts
+{ _id, key: string /* unique */, description?: string,
+  enabled: boolean /* false = kill switch on */, percentage: number /* 0–100 */,
+  includeCohorts: string[], excludeCohorts: string[],
+  sticky: boolean,
+  createdAt: Date, updatedAt: Date }
+```
+
+`assignments` (sticky)
+```ts
+{ _id, flagKey: string, userId: string, value: boolean, createdAt: Date }
+// unique index on { flagKey, userId }
+```
+
+`audit` (append-only)
+```ts
+{ _id, at: Date, key: string, actorId: string | null /* null when no X-User-Id */,
+  before: Flag | null /* null when the PUT created the flag */, after: Flag }
+// index on { key, at }
+```
+
+- Sticky writes use an upsert with `$setOnInsert` on the unique index so concurrent first
+  evaluations can't create conflicting assignments — the first write wins and both callers return it.
+
+## Hashing
+
+- Bucket = `crc32(utf8(flagKey + ":" + userId)) % 100`, using the standard CRC-32 (IEEE 802.3,
+  same as zlib) and treating the result as an **unsigned** 32-bit integer.
+- Implementation: `zlib.crc32` from `node:zlib` (Node.js ≥ 22.2, already unsigned), over
+  `Buffer.from(input, "utf8")`. Pin the Node version in the Dockerfile accordingly.
+- Including `flagKey` in the input keeps buckets independent across flags.
+- The algorithm is fixed: changing it would reshuffle every non-sticky user.
+
+## HTTP API
+
+| Method & path | Body | Response |
+|---------------|------|----------|
+| `PUT /api/flags/:key` | all flag fields (`enabled`, `percentage`, `includeCohorts`, `excludeCohorts`, `sticky`) | `200 { flag }` |
+| `POST /api/flags/:key/evaluate` | `{ userId, cohorts }` | `200 { enabled: boolean, reason }` |
+| `GET /api/flags/:key/audit` | — | `200` list of audit entries, oldest first |
+| `POST /api/test/reset` | `{ now }` (required) | `200`; clears flags and sticky assignments (audit is kept) |
+
+### `PUT /api/flags/:key` — upsert
+- `key` comes from the path; a `key` in the body is ignored.
+- All five fields are **required**; a missing or invalid field returns `400`. The body fully
+  replaces the stored flag (create if missing, replace if present) — no partial updates, no defaults.
+- Every PUT appends one audit entry `{ at, key, actorId, before, after }`, even if nothing changed:
+  `at` = server clock, `actorId` = the `X-User-Id` header, or `null` if absent,
+  `before` = `null` when the flag didn't exist.
+- The kill switch is a PUT with `enabled: false`; there's no separate endpoint.
+
+### `POST /api/flags/:key/evaluate`
+- Runs the rules in `mission.md`; `reason` is one of `FLAG_NOT_FOUND`, `KILL_SWITCH`,
+  `COHORT_EXCLUDED`, `COHORT_INCLUDED`, `STICKY`, `PERCENTAGE`.
+- An unknown flag returns `200 { enabled: false, reason: "FLAG_NOT_FOUND" }`, so clients fail safe.
+
+### `GET /api/flags/:key/audit`
+- Returns the entries for that key; an empty list for a key with no history.
+
+### `POST /api/test/reset` — test support
+- Deletes all flags and sticky assignments. The **audit log is not cleared**; a flag re-created
+  after a reset gets an entry with `before: null`.
+- `now` (ISO-8601, **required**; missing or invalid → `400`) freezes the server clock at that
+  instant until the next reset, so audit `at` values are deterministic in tests.
+- Only mounted when `ENABLE_TEST_ENDPOINTS=true`; otherwise it returns `404`.
+
+## Clock
+
+- All timestamps (`at`, `createdAt`, `updatedAt`) come from one injectable `Clock` module
+  (`now(): Date`), never `new Date()` directly, so the test reset can freeze it.
+
+## Conventions
+
+- Validate all request bodies with Zod; return `400` with details on failure.
+- Config via environment variables (`MONGODB_URI`, `MONGODB_DB`, `ENABLE_TEST_ENDPOINTS`).
+- Tests colocated as `*.test.ts`; integration tests in `*.int.test.ts`.
