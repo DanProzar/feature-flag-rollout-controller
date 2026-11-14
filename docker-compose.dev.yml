@@ -1,0 +1,13 @@
+services:
+  app:
+    build:
+      target: deps
+    # webpack + polling: file events from bind mounts (e.g. Docker Desktop on Windows)
+    # do not reach the container, and Turbopack has no polling fallback.
+    command: npm run dev -- --webpack
+    environment:
+      NODE_ENV: development
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - .:/app
+      - /app/node_modules
