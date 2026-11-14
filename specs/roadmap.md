@@ -3,7 +3,7 @@
 Evaluator core first, then persistence, API, and UI. Each phase is small, ends with green tests, and
 is committed on its own.
 
-## Phase 0 — Scaffold
+## Phase 0 — Scaffold ✅ Complete
 1. Init Next.js + TypeScript (strict) project, ESLint, Prettier.
 2. Add Vitest with one trivial passing test.
 3. Add `Dockerfile` (Node ≥ 22.2) + `docker-compose.yml` (`app`, `mongo`); app boots and serves a
