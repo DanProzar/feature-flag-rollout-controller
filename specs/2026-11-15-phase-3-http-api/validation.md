@@ -8,7 +8,7 @@ The phase is done and can be merged into `main` when every check below passes on
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d mongo
 npm ci
 npm run lint            # exits 0, no warnings
-npm run typecheck       # exits 0
+npm run typecheck       # runs `next typegen` then tsc; exits 0
 npm run format:check    # exits 0
 npm test                # unit tests only; passes with Mongo stopped, exits 0
 npm run test:int        # integration tests against Mongo, exits 0
@@ -43,7 +43,9 @@ grep -rnE 'new Date\(\)|Date\.now\(' src --include=*.ts --exclude-dir=tests | gr
 - [ ] Schemas: key format accept/reject list; PUT body requires all five fields, percentage integer
       0–100, cohorts trimmed / non-empty / de-duplicated, body `key` stripped; evaluate `userId`
       required and `cohorts` defaults to `[]`; reset `now` ISO date-time required.
-- [ ] `parseJson`: invalid JSON and schema failures → `400 { error, issues }`.
+- [ ] `parseJson` / `parseKey`: invalid JSON, schema failures and bad keys throw `BadRequestError`,
+      which `handle` answers with `400 { error, issues }`; `handle` rethrows other errors and
+      `notFound()`.
 - [ ] App clock: system by default; frozen after `freezeClock`; re-freezable; `unfreezeClock`;
       shared via `globalThis`.
 - [ ] `testEndpointsEnabled`: only `"true"` enables.
@@ -94,6 +96,8 @@ endpoints enabled):
 
 - [ ] Route handlers only validate, call a service and respond; orchestration lives in
       `src/server`.
+- [ ] Handlers use `NextRequest`, `NextResponse` and `RouteContext`, are wrapped in `handle`, and
+      contain no `instanceof Response` checks; the disabled reset uses `notFound()`.
 - [ ] All request bodies and path keys are validated with Zod; `400` bodies have `error` and
       `issues`.
 - [ ] Sticky assignments are read only for sticky flags and written only via `insertIfAbsent`, and

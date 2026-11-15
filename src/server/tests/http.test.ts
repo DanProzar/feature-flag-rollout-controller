@@ -1,18 +1,31 @@
+import { notFound } from "next/navigation";
+import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { actorIdFrom, invalidKey, parseJson, parseKey } from "../http";
+import {
+  actorIdFrom,
+  BadRequestError,
+  handle,
+  parseJson,
+  parseKey,
+} from "../http";
 
 const Schema = z.object({ name: z.string().min(1), count: z.int() });
 
-function jsonRequest(body: string, headers: HeadersInit = {}): Request {
-  return new Request("http://localhost/test", {
+function jsonRequest(body: string, headers: HeadersInit = {}): NextRequest {
+  return new NextRequest("http://localhost/test", {
     method: "POST",
     headers: { "content-type": "application/json", ...headers },
     body,
   });
 }
 
-async function read(response: Response) {
+/** What `parseJson` / `parseKey` threw, as `handle` would answer it. */
+async function answer(parse: () => unknown) {
+  const response = await handle(async () => {
+    await parse();
+    return new Response("unreachable");
+  })();
   return { status: response.status, body: await response.json() };
 }
 
@@ -26,54 +39,85 @@ describe("parseJson", () => {
   });
 
   it.each(["", "{", "not json", "{'name':'a'}"])(
-    "answers 400 Invalid JSON for %j",
+    "throws Invalid JSON for %j",
     async (body) => {
-      const response = await parseJson(jsonRequest(body), Schema);
-      expect(response).toBeInstanceOf(Response);
-      expect(await read(response as Response)).toEqual({
+      await expect(parseJson(jsonRequest(body), Schema)).rejects.toThrow(
+        BadRequestError,
+      );
+      expect(await answer(() => parseJson(jsonRequest(body), Schema))).toEqual({
         status: 400,
         body: { error: "Invalid JSON", issues: {} },
       });
     },
   );
 
-  it("answers 400 with the failing field names on a schema failure", async () => {
-    const response = await parseJson(jsonRequest('{"count":1.5}'), Schema);
-    const { status, body } = await read(response as Response);
+  it("throws with the failing field names on a schema failure", async () => {
+    const { status, body } = await answer(() =>
+      parseJson(jsonRequest('{"count":1.5}'), Schema),
+    );
     expect(status).toBe(400);
     expect(body.error).toBe("Invalid request body");
     expect(Object.keys(body.issues).sort()).toEqual(["count", "name"]);
     expect(body.issues.name).toEqual([expect.any(String)]);
   });
 
-  it("answers 400 for valid JSON that is not an object", async () => {
-    const response = await parseJson(jsonRequest("[1]"), Schema);
-    const { status, body } = await read(response as Response);
-    expect(status).toBe(400);
-    expect(body).toEqual({ error: "Invalid request body", issues: {} });
+  it("throws for valid JSON that is not an object", async () => {
+    expect(await answer(() => parseJson(jsonRequest("[1]"), Schema))).toEqual({
+      status: 400,
+      body: { error: "Invalid request body", issues: {} },
+    });
   });
 });
 
-describe("parseKey / invalidKey", () => {
+describe("parseKey", () => {
   it("returns a valid key", () => {
     expect(parseKey("new-checkout")).toBe("new-checkout");
   });
 
-  it("answers 400 Invalid flag key with issues on key", async () => {
-    const response = parseKey("Bad Key");
-    expect(response).toBeInstanceOf(Response);
-    const { status, body } = await read(response as Response);
-    expect(status).toBe(400);
-    expect(body).toEqual({
-      error: "Invalid flag key",
-      issues: { key: [expect.any(String)] },
+  it("throws Invalid flag key with issues on key", async () => {
+    expect(() => parseKey("Bad Key")).toThrow(BadRequestError);
+    expect(await answer(() => parseKey("Bad Key"))).toEqual({
+      status: 400,
+      body: {
+        error: "Invalid flag key",
+        issues: { key: [expect.any(String)] },
+      },
+    });
+  });
+});
+
+describe("handle", () => {
+  it("passes the arguments through and returns the handler's response", async () => {
+    const handler = handle(async (a: number, b: string) =>
+      Response.json({ a, b }),
+    );
+    const response = await handler(1, "x");
+    expect(await response.json()).toEqual({ a: 1, b: "x" });
+  });
+
+  it("answers a BadRequestError with 400 { error, issues }", async () => {
+    const response = await handle(async () => {
+      throw new BadRequestError("Nope", { field: ["bad"] });
+    })();
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "Nope",
+      issues: { field: ["bad"] },
     });
   });
 
-  it("invalidKey builds the same shape", async () => {
-    expect(await read(invalidKey(["bad"]))).toEqual({
-      status: 400,
-      body: { error: "Invalid flag key", issues: { key: ["bad"] } },
+  it("rethrows other errors for Next to answer", async () => {
+    const boom = new Error("boom");
+    await expect(
+      handle(async () => {
+        throw boom;
+      })(),
+    ).rejects.toBe(boom);
+  });
+
+  it("rethrows Next's notFound() so Next answers 404", async () => {
+    await expect(handle(async () => notFound())()).rejects.toMatchObject({
+      digest: expect.stringMatching(/^NEXT_HTTP_ERROR_FALLBACK;404/),
     });
   });
 });

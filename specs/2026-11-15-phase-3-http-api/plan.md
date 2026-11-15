@@ -16,9 +16,11 @@ group, watch them fail, then implement. Integration tests need Mongo:
      cohort element rules.
    - `ResetBodySchema`: valid ISO date-time (with `Z` and with offset) → `Date` of that instant;
      missing, `""`, `"yesterday"`, a date without time, a number → rejected.
-2. `src/server/tests/http.test.ts` (unit): `parseJson` returns the parsed value; invalid JSON → `400
-   { error: "Invalid JSON", issues: {} }`; schema failure → `400 { error: "Invalid request body",
-   issues }` with field names; `invalidKey()` → `400 { error: "Invalid flag key", issues }`.
+2. `src/server/tests/http.test.ts` (unit, with `NextRequest`): `parseJson` returns the parsed value;
+   invalid JSON → throws `BadRequestError`, answered by `handle` as `400 { error: "Invalid JSON",
+   issues: {} }`; schema failure → `400 { error: "Invalid request body", issues }` with field
+   names; `parseKey` with a bad key → `400 { error: "Invalid flag key", issues: { key } }`;
+   `handle` passes arguments and responses through and rethrows other errors and `notFound()`.
 3. Implement `src/server/schemas.ts` and `src/server/http.ts`.
 4. Extend Vitest coverage `include` to `src/server/**/*.ts` and `src/app/api/**/*.ts` (excluding
    `**/tests/**`), keeping the 100% thresholds.
@@ -73,8 +75,9 @@ group, watch them fail, then implement. Integration tests need Mongo:
 1. `src/app/api/tests/helpers.ts`: `useApi()` — `useTestDb()`, `setServicesForTesting(
    createServices(db, appClock))` before each file, `unfreezeClock()` + override cleared after;
    request builders `put(key, body, headers?)`, `evaluate(key, body)`, `audit(key)`,
-   `reset(body)` that call the exported handlers with `new Request(...)` and
-   `{ params: Promise.resolve({ key }) }`, returning `{ status, body }`.
+   `reset(body)` that call the exported handlers with `new NextRequest(...)` and
+   `{ params: Promise.resolve({ key }) }`, returning `{ status, body }`; a thrown `notFound()`
+   error becomes `{ status: 404, body: null }`.
 2. `src/app/api/tests/flags.int.test.ts`:
    - PUT valid → `200 { flag }` with `key` from the path (a body `key` is ignored).
    - PUT invalid key, invalid JSON, each missing field, out-of-range percentage → `400` with
@@ -86,8 +89,10 @@ group, watch them fail, then implement. Integration tests need Mongo:
    - `ENABLE_TEST_ENDPOINTS` unset or `"false"` → `404` (also with an invalid body); `"true"` →
      `200 { now }`.
    - Missing / invalid `now` → `400`.
-4. Implement the four `route.ts` files (`dynamic = "force-dynamic"`), reading `X-User-Id`
-   (trimmed, empty → `null`); run tests, commit.
+4. Implement the four `route.ts` files (`dynamic = "force-dynamic"`) as
+   `handle(async (request: NextRequest, ctx: RouteContext<…>) => NextResponse.json(…))`, reading
+   `X-User-Id` (trimmed, empty → `null`); the disabled reset calls `notFound()`. Make `typecheck`
+   run `next typegen` first so `RouteContext` exists on a clean checkout; run tests, commit.
 
 ## 7. API scenario tests (roadmap item 27)
 1. `src/app/api/tests/scenarios.int.test.ts`, each test starting with `reset({ now })`:

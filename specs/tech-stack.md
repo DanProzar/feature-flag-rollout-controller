@@ -53,12 +53,16 @@ src/data/
   process (cached on `globalThis`, failures retried) and builds the services on `appClock`;
   integration tests swap in their own with `setServicesForTesting`.
 - **Route handlers** (`src/app/api`) only validate the path key and body, call a service and
-  respond; they never import `src/data` or the driver. All are `dynamic = "force-dynamic"`.
+  respond; they never import `src/data` or the driver. All are `dynamic = "force-dynamic"`. They use
+  Next.js primitives: `NextRequest`, `NextResponse.json`, the generated `RouteContext<"/api/…">`
+  type for `params` (so `npm run typecheck` runs `next typegen` first) and `notFound()`. Each is
+  wrapped in `handle(...)`: the parsers throw `BadRequestError`, which `handle` turns into the
+  `400`; anything else is left to Next.
 
 ```
 src/server/
   schemas.ts      # FlagKeySchema, PutFlagBodySchema, EvaluateBodySchema, ResetBodySchema (Zod)
-  http.ts         # parseJson, parseKey, invalidKey, actorIdFrom
+  http.ts         # BadRequestError, handle, parseJson, parseKey, actorIdFrom
   clock.ts        # appClock, freezeClock, unfreezeClock (delegate on globalThis)
   config.ts       # testEndpointsEnabled(env)
   flags.ts        # createFlagService: put, evaluate, audit
@@ -170,7 +174,7 @@ not validated against it)
 - `now` (ISO-8601, **required**; missing or invalid → `400`) freezes the server clock at that
   instant until the next reset, so audit `at` values are deterministic in tests.
 - Served only when `ENABLE_TEST_ENDPOINTS` is exactly `"true"` (checked per request, before the
-  body is parsed); otherwise it returns `404`. `docker-compose.dev.yml` enables it;
+  body is parsed); otherwise it calls Next's `notFound()` and Next answers `404`. `docker-compose.dev.yml` enables it;
   `docker-compose.yml` keeps it off. Seed flags are not re-inserted.
 
 ## Clock

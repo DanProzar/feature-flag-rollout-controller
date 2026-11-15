@@ -39,8 +39,13 @@ rejected.
 
 ### 2. HTTP helpers (`src/server/http.ts`)
 
-- `parseJson(request, schema)` → parsed value, or a `400` response when the body is not valid JSON
-  or fails the schema.
+- `BadRequestError(message, issues)` — thrown for invalid client input.
+- `parseJson(request: NextRequest, schema)` → parsed value; throws `BadRequestError` when the body
+  is not valid JSON or fails the schema. `parseKey(key)` → the key; throws `BadRequestError` when it
+  fails `FlagKeySchema`. `actorIdFrom(request: NextRequest)` → `actorId` (see §6).
+- `handle(handler)` — wraps every route handler: a thrown `BadRequestError` becomes
+  `NextResponse.json({ error, issues }, { status: 400 })`; any other error (including Next's
+  `notFound()`) is rethrown for Next to answer. Handlers therefore have no early-return branches.
 - Error response shape for every `400`:
   `{ error: "Invalid request body" | "Invalid flag key", issues: Record<string, string[]> }`
   (`z.flattenError(...).fieldErrors`; for invalid JSON, `issues: {}` and `error: "Invalid JSON"`).
@@ -89,20 +94,26 @@ rejected.
 
 ### 6. Route handlers (`src/app/api`)
 
-All handlers are thin: validate path key → parse body → call a service → `Response.json(...)`.
-`export const dynamic = "force-dynamic"`; Node.js runtime (default).
+All handlers are thin: validate path key → parse body → call a service → `NextResponse.json(...)`.
+They use Next.js primitives: each is exported as `handle(async (request: NextRequest, ctx:
+RouteContext<"/api/flags/[key]…">) => …)`, reading `(await ctx.params).key`. `RouteContext` is the
+global helper Next generates (`next dev` / `next build` / `next typegen`), so `npm run typecheck`
+runs `next typegen` before `tsc`. `export const dynamic = "force-dynamic"`; Node.js runtime
+(default).
 
 | Method & path | File | Success | Errors |
 |---------------|------|---------|--------|
 | `PUT /api/flags/:key` | `flags/[key]/route.ts` | `200 { flag }` | `400` invalid key / JSON / body |
 | `GET /api/flags/:key/audit` | `flags/[key]/audit/route.ts` | `200 { entries }`, oldest first; `[]` for unknown key | `400` invalid key |
 | `POST /api/flags/:key/evaluate` | `flags/[key]/evaluate/route.ts` | `200 { enabled, reason }`; unknown flag → `200 { enabled: false, reason: "FLAG_NOT_FOUND" }` | `400` invalid key / JSON / body |
-| `POST /api/test/reset` | `test/reset/route.ts` | `200 { now }` (ISO string) | `404` unless `ENABLE_TEST_ENDPOINTS === "true"` (checked per request, before body parsing); `400` missing/invalid `now` |
+| `POST /api/test/reset` | `test/reset/route.ts` | `200 { now }` (ISO string) | `404` via Next's `notFound()` unless `ENABLE_TEST_ENDPOINTS === "true"` (checked per request, before body parsing); `400` missing/invalid `now` |
 
 - `actorId` = the `X-User-Id` header if present and non-empty after trimming, else `null`.
 - Audit entries serialise `at` as an ISO-8601 string; `before`/`after` are domain `Flag`s
   (`before: null` on create).
 - Methods not listed get Next's default `405`.
+- The disabled reset route calls `notFound()` from `next/navigation`, so Next produces the `404`
+  (in a Route Handler Next answers it with an empty body, not the HTML not-found page).
 
 ### 7. Config and compose
 
@@ -114,12 +125,13 @@ All handlers are thin: validate path key → parse body → call a service → `
 
 ### 8. Tests and tooling
 
-- Unit tests (`src/server/tests/*.test.ts`): request schemas, `parseJson`, app clock,
-  `testEndpointsEnabled`.
+- Unit tests (`src/server/tests/*.test.ts`): request schemas, `parseJson`, `parseKey`, `handle`,
+  app clock, `testEndpointsEnabled`.
 - Integration tests (`*.int.test.ts`) call the exported route handlers directly with
-  `new Request(...)` and `{ params: Promise.resolve({ key }) }`, against the per-file test database
+  `new NextRequest(...)` and `{ params: Promise.resolve({ key }) }`, against the per-file test database
   from `useTestDb()`, wired in with `setServicesForTesting`. Service tests use repositories on the
-  test database and `frozenClock`.
+  test database and `frozenClock`. The test helper maps the error `notFound()` throws (digest
+  `NEXT_HTTP_ERROR_FALLBACK;404`) to `{ status: 404 }`, as Next does.
 - Coverage: extend the 100% gate to `src/server/**/*.ts` and `src/app/api/**/*.ts` (excluding test
   folders).
 
@@ -148,7 +160,9 @@ All handlers are thin: validate path key → parse body → call a service → `
 | Read endpoints | **Deferred to Phase 4** | Keep Phase 3 to the roadmap's four endpoints. |
 | Indexes | `ensureIndexes` once per process from the container | Phase 2 deferred this to "app startup"; lazy-once avoids a custom server. |
 | Sticky persistence | Response uses the value returned by `insertIfAbsent` | A concurrent first evaluation may have stored the other value; every caller must agree with storage. |
-| Test endpoint gate | Env checked per request; disabled → `404` before parsing | Indistinguishable from a missing route in production. |
+| Next.js primitives | `NextRequest` / `NextResponse`, typed `RouteContext`, `notFound()` | Use the framework's own request, response, route typing and 404 handling instead of hand-rolled equivalents. |
+| Error flow | Parsers **throw** `BadRequestError`; one `handle` wrapper maps it to `400`, everything else goes to Next | Handlers read top to bottom with no `instanceof Response` checks; one place owns the `400` shape. |
+| Test endpoint gate | Env checked per request; disabled → Next's `notFound()` before parsing | Next owns the `404`; no body hints that the route exists. |
 | API tests | **Call route handlers directly** in Vitest `int` tests | Fast, no server lifecycle, counts toward coverage; manual curl smoke test covers the real server. |
 | Coverage | 100% on `src/server` and `src/app/api` (plus existing domain + data) | Same bar as Phases 1–2. |
 | Workflow | Test-first, one commit per task group | As in Phases 1–2. |

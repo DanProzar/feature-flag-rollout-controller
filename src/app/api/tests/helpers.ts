@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { afterAll, beforeAll } from "vitest";
 import { type TestDb, useTestDb } from "@/data/tests/harness";
 import {
@@ -39,8 +40,8 @@ function request(
   path: string,
   body?: unknown,
   headers: Record<string, string> = {},
-): Request {
-  return new Request(`${BASE}${path}`, {
+): NextRequest {
+  return new NextRequest(`${BASE}${path}`, {
     method,
     headers: { "content-type": "application/json", ...headers },
     body:
@@ -56,10 +57,26 @@ function context(key: string) {
   return { params: Promise.resolve({ key }) };
 }
 
-async function read(response: Response): Promise<ApiResponse> {
-  const text = await response.text();
-  return { status: response.status, body: text ? JSON.parse(text) : null };
+/**
+ * The handler's status and JSON body. Next's `notFound()` is thrown out of the handler, and Next
+ * itself turns it into its 404 page; here it becomes `{ status: 404, body: null }`.
+ */
+async function read(pending: Promise<Response>): Promise<ApiResponse> {
+  let response: Response;
+  try {
+    response = await pending;
+  } catch (error) {
+    const digest = (error as { digest?: unknown }).digest;
+    if (typeof digest === "string" && digest.startsWith(NOT_FOUND_DIGEST)) {
+      return { status: 404, body: null };
+    }
+    throw error;
+  }
+  return { status: response.status, body: await response.json() };
 }
+
+/** The digest of the error `notFound()` throws (see Next's `notFound` docs). */
+const NOT_FOUND_DIGEST = "NEXT_HTTP_ERROR_FALLBACK;404";
 
 export async function put(
   key: string,
@@ -67,10 +84,7 @@ export async function put(
   headers?: Record<string, string>,
 ): Promise<ApiResponse> {
   return read(
-    await putFlag(
-      request("PUT", `/api/flags/${key}`, body, headers),
-      context(key),
-    ),
+    putFlag(request("PUT", `/api/flags/${key}`, body, headers), context(key)),
   );
 }
 
@@ -79,7 +93,7 @@ export async function evaluate(
   body: unknown,
 ): Promise<ApiResponse> {
   return read(
-    await postEvaluate(
+    postEvaluate(
       request("POST", `/api/flags/${key}/evaluate`, body),
       context(key),
     ),
@@ -88,10 +102,10 @@ export async function evaluate(
 
 export async function audit(key: string): Promise<ApiResponse> {
   return read(
-    await getAudit(request("GET", `/api/flags/${key}/audit`), context(key)),
+    getAudit(request("GET", `/api/flags/${key}/audit`), context(key)),
   );
 }
 
 export async function reset(body: unknown): Promise<ApiResponse> {
-  return read(await postReset(request("POST", "/api/test/reset", body)));
+  return read(postReset(request("POST", "/api/test/reset", body)));
 }

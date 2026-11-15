@@ -8,7 +8,13 @@ export {
 } from "./container";
 export type { Evaluation, FlagService } from "./flags";
 export { createFlagService } from "./flags";
-export { actorIdFrom, invalidKey, parseJson, parseKey } from "./http";
+export {
+  actorIdFrom,
+  BadRequestError,
+  handle,
+  parseJson,
+  parseKey,
+} from "./http";
 export type { ResetService } from "./reset";
 export { createResetService } from "./reset";
 export type { EvaluateBody, PutFlagBody, ResetBody } from "./schemas";

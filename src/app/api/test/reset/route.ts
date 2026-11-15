@@ -1,5 +1,8 @@
+import { notFound } from "next/navigation";
+import { type NextRequest, NextResponse } from "next/server";
 import {
   getServices,
+  handle,
   parseJson,
   ResetBodySchema,
   testEndpointsEnabled,
@@ -8,14 +11,13 @@ import {
 export const dynamic = "force-dynamic";
 
 /**
- * Test support: clears flags and sticky assignments and freezes the clock at `now`. Answers 404,
- * before looking at the body, unless `ENABLE_TEST_ENDPOINTS` is `"true"`.
+ * Test support: clears flags and sticky assignments and freezes the clock at `now`. Unless
+ * `ENABLE_TEST_ENDPOINTS` is `"true"`, Next answers its own 404, before the body is read.
  */
-export async function POST(request: Request): Promise<Response> {
-  if (!testEndpointsEnabled()) return new Response(null, { status: 404 });
+export const POST = handle(async (request: NextRequest) => {
+  if (!testEndpointsEnabled()) notFound();
   const body = await parseJson(request, ResetBodySchema);
-  if (body instanceof Response) return body;
   const { reset } = await getServices();
   await reset.reset(body.now);
-  return Response.json({ now: body.now.toISOString() });
-}
+  return NextResponse.json({ now: body.now.toISOString() });
+});
