@@ -121,11 +121,17 @@ const SKIPPED: SeedOutcome = { seeded: false, count: 0 };
  * collection is seeded by exactly one run.
  */
 export async function seed(db: Db, clock: Clock): Promise<SeedResult> {
-  const [cohorts, users, flags] = await Promise.all([
+  // allSettled, not all: on a failure, wait for the other collections to finish before throwing,
+  // so no write is still running when the caller closes the connection.
+  const outcomes = await Promise.allSettled([
     insertIfEmpty(db, "cohorts", SEED_COHORTS),
     insertIfEmpty(db, "users", SEED_USERS),
     seedFlags(db, clock),
   ]);
+  const [cohorts, users, flags] = outcomes.map((outcome) => {
+    if (outcome.status === "rejected") throw outcome.reason;
+    return outcome.value;
+  });
   return { cohorts, users, flags };
 }
 
