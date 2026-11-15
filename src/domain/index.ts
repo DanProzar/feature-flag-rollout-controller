@@ -5,3 +5,4 @@ export type {
   Reason,
 } from "./types";
 export { bucket } from "./bucket";
+export { evaluate } from "./evaluate";
