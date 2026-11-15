@@ -9,3 +9,4 @@ export { createAssignmentsRepository } from "./assignments";
 export type { AuditRepository } from "./audit";
 export { createAuditRepository } from "./audit";
 export type { AuditEntry } from "./schemas";
+export { resetFlagsAndAssignments } from "./reset";
