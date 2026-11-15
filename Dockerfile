@@ -3,6 +3,12 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+# One-shot seeder for compose: needs the sources and dev dependencies (tsx), which the standalone
+# runner image does not have.
+FROM deps AS seed
+COPY . .
+CMD ["npm", "run", "seed"]
+
 FROM node:24-alpine AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1

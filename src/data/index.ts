@@ -17,3 +17,5 @@ export type { CohortsRepository } from "./cohorts";
 export { createCohortsRepository } from "./cohorts";
 export type { Cohort } from "./schemas";
 export { DuplicateCohortError } from "./errors";
+export type { SeedOutcome, SeedResult } from "./seed";
+export { SEED_COHORTS, SEED_FLAGS, SEED_USERS, seed } from "./seed";

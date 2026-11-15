@@ -38,6 +38,7 @@ export async function closeDb(): Promise<void> {
   const pending = globalForMongo.__featureFlagsMongo;
   if (!pending) return;
   delete globalForMongo.__featureFlagsMongo;
-  const { client } = await pending;
-  await client.close();
+  // A connection that failed has nothing to close.
+  const connection = await pending.catch(() => undefined);
+  await connection?.client.close();
 }

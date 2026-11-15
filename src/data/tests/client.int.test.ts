@@ -61,4 +61,15 @@ describe("getDb", () => {
     const db = await getDb();
     expect(await db.command({ ping: 1 })).toMatchObject({ ok: 1 });
   });
+
+  it("closeDb during a failed connect resolves and leaves the next connection alone", async () => {
+    process.env.MONGODB_URI =
+      "mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=200";
+    const failing = getDb();
+    process.env.MONGODB_URI = TEST_MONGODB_URI;
+    await expect(closeDb()).resolves.toBeUndefined();
+    await expect(failing).rejects.toThrow();
+    const db = await getDb();
+    expect(await db.command({ ping: 1 })).toMatchObject({ ok: 1 });
+  });
 });
