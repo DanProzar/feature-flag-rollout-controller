@@ -4,3 +4,5 @@ export { closeDb, getDb } from "./client";
 export { ensureIndexes } from "./indexes";
 export type { FlagsRepository } from "./flags";
 export { createFlagsRepository } from "./flags";
+export type { AssignmentsRepository } from "./assignments";
+export { createAssignmentsRepository } from "./assignments";

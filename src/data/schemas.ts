@@ -19,3 +19,12 @@ export const FlagDocumentSchema = FlagSchema.extend({
   updatedAt: z.date(),
 });
 export type FlagDocument = z.infer<typeof FlagDocumentSchema>;
+
+/** A user's stored sticky result for one flag. */
+export const AssignmentDocumentSchema = z.object({
+  flagKey: z.string().min(1),
+  userId: z.string().min(1),
+  value: z.boolean(),
+  createdAt: z.date(),
+});
+export type AssignmentDocument = z.infer<typeof AssignmentDocumentSchema>;
