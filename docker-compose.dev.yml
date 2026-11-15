@@ -1,4 +1,9 @@
 services:
+  mongo:
+    # Exposed so tests and `npm run seed` on the host can reach it.
+    ports:
+      - "27017:27017"
+
   app:
     build:
       target: deps

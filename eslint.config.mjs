@@ -7,6 +7,11 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   prettier,
+  // Test helpers like `useTestDb()` are Vitest fixtures, not React hooks.
+  {
+    files: ["src/**/tests/**"],
+    rules: { "react-hooks/rules-of-hooks": "off" },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

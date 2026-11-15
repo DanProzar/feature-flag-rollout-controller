@@ -30,7 +30,7 @@ user whether to reuse it rather than overwrite anything.
 ## 3. Interview the user — before writing anything
 
 Use the **AskUserQuestion** tool, with questions grouped around the three files you are about to
-write. Nothing goes to disk until the user has answered: the spec captures *their* decisions, and
+write. Nothing goes to disk until the user has answered: the spec captures _their_ decisions, and
 writing first tends to anchor them on your guesses.
 
 - **Plan** — how to slice the work into task groups, ordering, test-first or not, commit granularity.
@@ -48,6 +48,7 @@ an answer opens a new question.
 Create `specs/YYYY-MM-DD-<feature-name>/` using today's date, containing:
 
 ### `requirements.md` — scope, decisions, context
+
 - Title `# <Phase title>: Requirements`, then the branch name and the roadmap phase/items covered.
 - **Context**: why this phase now, what earlier phases delivered, how it ties to the mission.
 - **Scope**: what will be built, concretely (files, types, endpoints, behaviours).
@@ -55,11 +56,13 @@ Create `specs/YYYY-MM-DD-<feature-name>/` using today's date, containing:
 - **Decisions**: each decision from the interview, with its reasoning.
 
 ### `plan.md` — numbered task groups
+
 - Title `# <Phase title>: Plan`.
 - A series of `## N. <Group name>` sections, each with numbered steps. Reference roadmap item
   numbers where relevant. Each group should end in a working, committable state.
 
 ### `validation.md` — how to know it can be merged
+
 - Title `# <Phase title>: Validation`.
 - Exact commands to run and their expected result, required tests as a `- [ ]` checklist, and any
   manual checks. Every item should be objectively checkable.
