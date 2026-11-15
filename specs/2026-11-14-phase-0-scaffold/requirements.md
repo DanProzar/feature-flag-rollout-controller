@@ -42,10 +42,16 @@ Strictly roadmap items 1–3:
 | MongoDB | **`mongo:8`** image | Current major release. The official driver supports it. |
 | Docker image | **Both**: a production standalone image by default, plus a dev override with hot reload | `docker compose up` runs the real system. `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` is for iterating. |
 | Placeholder page | A minimal page that names the product. No UI work. | Phase 4 owns the UI. |
+| UI framework | **shadcn/ui** (`base-nova` preset) on **Tailwind CSS v4**, initialised in this phase. Originally scaffolded without Tailwind; added as a follow-up. | Copy-in components we own and can edit, accessible primitives, and a consistent theme via CSS variables. Setting it up now keeps Phase 4 focused on screens. |
+
+4. **UI framework (follow-up)**
+   - Tailwind CSS v4 via PostCSS and shadcn/ui initialised (`components.json`, `src/lib/utils.ts`,
+     theme tokens in `src/app/globals.css`). Only the CLI's default `button` component is added.
 
 ## Out of scope
 
 - The `src/domain`, `src/data` and `src/app/api` code and folders (Phases 1–3).
 - A MongoDB client or any DB connection from the app (Phase 2).
 - A CI pipeline (GitHub Actions).
+- Any shadcn/ui components beyond the CLI default and any real UI screens (Phase 4).
 - README run instructions (Phase 5). A one-line note is acceptable if it helps reviewers.

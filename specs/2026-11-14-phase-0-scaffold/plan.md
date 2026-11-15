@@ -3,7 +3,7 @@
 Each group ends in a working state and can be committed on its own.
 
 ## 1. Next.js + TypeScript project (roadmap item 1)
-1. Run `create-next-app` with TypeScript, App Router, `src/` dir, ESLint, npm, and no Tailwind.
+1. Run `create-next-app` with TypeScript, App Router, `src/` dir, ESLint, npm, and no Tailwind (Tailwind is added with shadcn/ui in group 4).
 2. Confirm that `tsconfig.json` has `"strict": true`.
 3. Replace the default home page with a minimal placeholder page (product name only) and remove
    the boilerplate assets.
@@ -33,6 +33,16 @@ Each group ends in a working state and can be committed on its own.
 6. Add `.env.example` with the three env vars.
 7. Smoke test both modes (see `validation.md`), then commit.
 
-## 4. Wrap-up
+## 4. shadcn/ui (follow-up, see `requirements.md` → Decisions)
+1. Install Tailwind CSS v4 (`tailwindcss`, `@tailwindcss/postcss`, `postcss`), add
+   `postcss.config.mjs` and `src/app/globals.css` (`@import "tailwindcss";`), and import it in
+   `layout.tsx`.
+2. Run `npx shadcn@latest init -d` (preset `base-nova`, neutral base colour, CSS variables). This
+   writes `components.json`, `src/lib/utils.ts`, `src/components/ui/button.tsx` and the theme tokens
+   in `globals.css`, and adds the Geist font in `layout.tsx`.
+3. Style the placeholder page with Tailwind utility classes.
+4. Run `lint`, `typecheck`, `format:check`, `test` and `build` until they all pass, then commit.
+
+## 5. Wrap-up
 1. Run the full validation checklist.
 2. Open a PR from `feature/phase-0-scaffold` into `main`.

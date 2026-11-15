@@ -8,6 +8,8 @@ is committed on its own.
 2. Add Vitest with one trivial passing test.
 3. Add `Dockerfile` (Node ≥ 22.2) + `docker-compose.yml` (`app`, `mongo`); app boots and serves a
    placeholder page.
+   Follow-up: shadcn/ui on Tailwind CSS v4 initialised (`components.json`, `src/components/ui`,
+   `src/lib/utils.ts`, theme tokens in `globals.css`).
 
 ## Phase 1 — Pure evaluator (`src/domain`)
 4. Define types: `Flag`, `EvaluationContext`, `EvaluationResult`, `Reason`.
@@ -47,14 +49,14 @@ is committed on its own.
     PUT missing a field → `400`; sticky flag keeps value after percentage drops; non-sticky flag
     follows new percentage; kill/exclude/include override sticky without overwriting it.
 
-## Phase 4 — Admin UI (`src/app`)
-27. Flags list page (key, kill state, percentage, sticky, cohorts).
-28. Create/edit flag form (percentage slider, include/exclude cohort editors, sticky toggle), saving
-    via `PUT`.
-29. Prominent kill-switch toggle with confirmation.
-30. "Try it" evaluator panel: enter userId + cohorts, see `enabled` + `reason`.
+## Phase 4 — Admin UI (`src/app`, built with shadcn/ui)
+27. Flags list page (key, kill state, percentage, sticky, cohorts) using `Table` and `Badge`.
+28. Create/edit flag form (percentage `Slider`, include/exclude cohort editors, sticky `Switch`),
+    saving via `PUT`.
+29. Prominent kill-switch `Switch` with an `AlertDialog` confirmation.
+30. "Try it" evaluator panel (`Card`): enter userId + cohorts, see `enabled` + `reason`.
 31. Audit history view per flag: time, actor, before → after diff.
 
 ## Phase 5 — Polish
-32. Error, loading and empty states.
+32. Error, loading and empty states (shadcn `Skeleton`, `Alert`, `Sonner` toasts).
 33. README: run instructions (`docker compose up`), API examples with `curl`.

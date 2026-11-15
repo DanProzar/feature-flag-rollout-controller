@@ -40,5 +40,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 - [ ] The production image runs as a non-root user and uses Next.js standalone output.
 - [ ] `.env.example` lists `MONGODB_URI`, `MONGODB_DB` and `ENABLE_TEST_ENDPOINTS`, and no secrets are committed.
 - [ ] `package-lock.json` is committed.
-- [ ] Nothing outside roadmap items 1–3 was added: no domain or data code and no CI.
+- [ ] `components.json` exists, `src/app/globals.css` imports Tailwind and holds the shadcn theme
+      tokens, and `layout.tsx` imports `globals.css`. The placeholder page renders with Tailwind styles.
+- [ ] Nothing outside roadmap items 1–3 (plus the shadcn/ui setup) was added: no domain or data code and no CI.
 - [ ] Each task group from `plan.md` is its own commit on `feature/phase-0-scaffold`.
