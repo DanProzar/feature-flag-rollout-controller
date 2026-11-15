@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { KillStateBadge } from "@/components/flag-badges";
 import { FlagForm } from "@/components/flag-form";
+import { KillSwitch } from "@/components/kill-switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { flagToForm } from "@/lib/flag-form";
 import { FlagKeySchema, getServices } from "@/server";
@@ -24,7 +24,7 @@ export default async function FlagPage({ params }: PageProps<"/flags/[key]">) {
         <h1 className="font-mono text-2xl font-semibold tracking-tight break-all">
           {flag.key}
         </h1>
-        <KillStateBadge enabled={flag.enabled} />
+        <KillSwitch flag={flag} />
       </div>
 
       <Card>

@@ -1,14 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 
-/** "Live" or "Killed" for a flag's kill-switch state. */
-export function KillStateBadge({ enabled }: { enabled: boolean }) {
-  return enabled ? (
-    <Badge variant="secondary">Live</Badge>
-  ) : (
-    <Badge variant="destructive">Killed</Badge>
-  );
-}
-
 /** One badge per cohort, or a muted dash when there are none. */
 export function CohortBadges({
   cohorts,

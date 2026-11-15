@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { CohortBadges, KillStateBadge } from "@/components/flag-badges";
+import { CohortBadges } from "@/components/flag-badges";
+import { KillSwitch } from "@/components/kill-switch";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -57,7 +58,7 @@ export default async function FlagsPage() {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <KillStateBadge enabled={flag.enabled} />
+                    <KillSwitch flag={flag} />
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {flag.percentage}%
