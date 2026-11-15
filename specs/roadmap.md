@@ -26,7 +26,7 @@ is committed on its own.
 12. Table-driven test covering the full precedence matrix from `mission.md`.
 13. Injectable `Clock` (`now()`), with real and frozen implementations.
 
-## Phase 2 — Persistence (`src/data`)
+## Phase 2 — Persistence (`src/data`) ✅ Complete
 14. MongoDB client singleton + env config; integration test harness against the compose `mongo`.
 15. Flags repository: get by key, full-replace upsert (returns previous value); unique index on `key`.
 16. Assignments repository: get `(flagKey, userId)`; insert-if-absent via upsert + `$setOnInsert`;
