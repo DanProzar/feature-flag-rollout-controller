@@ -1,0 +1,241 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { type ReactNode, useState } from "react";
+import { type CohortOption, CohortEditor } from "@/components/cohort-editor";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { readActor } from "@/lib/actor";
+import { putFlag } from "@/lib/api-client";
+import {
+  type FieldErrors,
+  type FlagFormValues,
+  formToPutBody,
+  issuesToFieldErrors,
+  validateFlagForm,
+} from "@/lib/flag-form";
+
+/**
+ * Creates or edits a flag through `PUT /api/flags/:key`. On edit the key is read-only and the kill
+ * state is left to the kill switch; the page remounts this form whenever the stored flag changes,
+ * so a save never sends a stale `enabled`.
+ */
+export function FlagForm({
+  mode,
+  initial,
+  existingKeys,
+  cohorts,
+}: {
+  mode: "create" | "edit";
+  initial: FlagFormValues;
+  existingKeys: string[];
+  cohorts: CohortOption[];
+}) {
+  const router = useRouter();
+  const [values, setValues] = useState(initial);
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [failure, setFailure] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const { warnings } = validateFlagForm(values, existingKeys, mode);
+
+  function set<F extends keyof FlagFormValues>(
+    field: F,
+    value: FlagFormValues[F],
+  ) {
+    setValues((current) => ({ ...current, [field]: value }));
+  }
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setFailure(null);
+    const check = validateFlagForm(values, existingKeys, mode);
+    setErrors(check.errors);
+    if (!check.valid) return;
+
+    setSaving(true);
+    const result = await putFlag(
+      values.key,
+      formToPutBody(values),
+      readActor(),
+    );
+    setSaving(false);
+    if (!result.ok) {
+      setErrors(issuesToFieldErrors(result.issues));
+      setFailure(`Save failed: ${result.error}`);
+      return;
+    }
+    if (mode === "create") {
+      router.push(`/flags/${result.flag.key}`);
+    } else {
+      router.refresh();
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-6" noValidate>
+      <Field id="flag-key" label="Key" errors={errors.key}>
+        <Input
+          id="flag-key"
+          value={values.key}
+          readOnly={mode === "edit"}
+          placeholder="e.g. new-checkout"
+          autoComplete="off"
+          aria-invalid={errors.key ? true : undefined}
+          onChange={(event) => set("key", event.target.value)}
+        />
+      </Field>
+
+      {mode === "create" && (
+        <SwitchField
+          id="flag-enabled"
+          label="Live"
+          hint="Off means the kill switch is on: every evaluation returns false."
+          checked={values.enabled}
+          onChange={(checked) => set("enabled", checked)}
+        />
+      )}
+
+      <Field
+        id="flag-percentage"
+        label="Rollout percentage"
+        errors={errors.percentage}
+      >
+        <div className="flex items-center gap-4">
+          <Slider
+            aria-label="Rollout percentage"
+            min={0}
+            max={100}
+            step={1}
+            value={[Number.isFinite(values.percentage) ? values.percentage : 0]}
+            onValueChange={(value) =>
+              set("percentage", Array.isArray(value) ? value[0] : value)
+            }
+          />
+          <Input
+            id="flag-percentage"
+            type="number"
+            min={0}
+            max={100}
+            step={1}
+            className="w-20 tabular-nums"
+            value={Number.isNaN(values.percentage) ? "" : values.percentage}
+            aria-invalid={errors.percentage ? true : undefined}
+            onChange={(event) => set("percentage", event.target.valueAsNumber)}
+          />
+        </div>
+      </Field>
+
+      <Field
+        id="flag-include"
+        label="Include cohorts"
+        hint="Forced on, bypassing the percentage."
+        errors={errors.includeCohorts}
+      >
+        <CohortEditor
+          id="flag-include"
+          value={values.includeCohorts}
+          onChange={(next) => set("includeCohorts", next)}
+          catalogue={cohorts}
+          invalid={!!errors.includeCohorts}
+        />
+      </Field>
+
+      <Field
+        id="flag-exclude"
+        label="Exclude cohorts"
+        hint="Forced off; beats include."
+        errors={errors.excludeCohorts}
+        warnings={warnings.excludeCohorts}
+      >
+        <CohortEditor
+          id="flag-exclude"
+          value={values.excludeCohorts}
+          onChange={(next) => set("excludeCohorts", next)}
+          catalogue={cohorts}
+          invalid={!!errors.excludeCohorts}
+        />
+      </Field>
+
+      <SwitchField
+        id="flag-sticky"
+        label="Sticky"
+        hint="Store each user's first percentage result and reuse it. Existing assignments are kept when this changes."
+        checked={values.sticky}
+        onChange={(checked) => set("sticky", checked)}
+      />
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" disabled={saving}>
+          {saving ? "Saving…" : mode === "create" ? "Create flag" : "Save"}
+        </Button>
+        {failure && (
+          <p role="alert" className="text-sm text-destructive">
+            {failure}
+          </p>
+        )}
+      </div>
+    </form>
+  );
+}
+
+function Field({
+  id,
+  label,
+  hint,
+  errors,
+  warnings,
+  children,
+}: {
+  id: string;
+  label: string;
+  hint?: string;
+  errors?: string[];
+  warnings?: string[];
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      {hint && <p className="text-sm text-muted-foreground">{hint}</p>}
+      {children}
+      {errors?.map((message) => (
+        <p key={message} className="text-sm text-destructive">
+          {message}
+        </p>
+      ))}
+      {warnings?.map((message) => (
+        <p key={message} className="text-sm text-amber-600 dark:text-amber-400">
+          {message}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function SwitchField({
+  id,
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange(checked: boolean): void;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <Switch id={id} checked={checked} onCheckedChange={onChange} />
+      <div className="space-y-1">
+        <Label htmlFor={id}>{label}</Label>
+        <p className="text-sm text-muted-foreground">{hint}</p>
+      </div>
+    </div>
+  );
+}
