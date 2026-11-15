@@ -10,3 +10,6 @@ export type { AuditRepository } from "./audit";
 export { createAuditRepository } from "./audit";
 export type { AuditEntry } from "./schemas";
 export { resetFlagsAndAssignments } from "./reset";
+export type { NewUser, UsersRepository } from "./users";
+export { createUsersRepository } from "./users";
+export type { User } from "./schemas";

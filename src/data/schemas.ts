@@ -1,3 +1,4 @@
+import { validate, version } from "uuid";
 import { z } from "zod";
 
 // Zod schemas for every stored document. Repositories parse each document they read with these, so
@@ -38,3 +39,15 @@ export const AuditEntrySchema = z.object({
   after: FlagSchema,
 });
 export type AuditEntry = z.infer<typeof AuditEntrySchema>;
+
+/** True for a UUID v7 string, the only `userId` format stored in `users`. */
+export function isUuidV7(id: string): boolean {
+  return validate(id) && version(id) === 7;
+}
+
+export const UserSchema = z.object({
+  userId: z.string().refine(isUuidV7, "userId must be a UUID v7"),
+  name: z.string().min(1),
+  cohorts: z.array(z.string()),
+});
+export type User = z.infer<typeof UserSchema>;
