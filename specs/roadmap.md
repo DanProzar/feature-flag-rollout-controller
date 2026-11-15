@@ -41,7 +41,7 @@ is committed on its own.
     when empty. Runnable via an npm script and on compose startup; reset leaves cohorts and users
     untouched (flags return on the next seed run).
 
-## Phase 3 — HTTP API (`src/app/api`)
+## Phase 3 — HTTP API (`src/app/api`) ✅ Complete
 21. Zod schemas: PUT body (all five fields required), evaluate body, reset body (`now` required).
 22. `POST /api/test/reset { now }`: clears flags + sticky, freezes the clock at `now`; mounted only
     when `ENABLE_TEST_ENDPOINTS=true`.

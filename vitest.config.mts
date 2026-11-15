@@ -1,6 +1,11 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  // Mirrors the `@/*` path in tsconfig.json, which route handlers use.
+  resolve: {
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+  },
   test: {
     environment: "node",
     projects: [
@@ -24,7 +29,12 @@ export default defineConfig({
     ],
     coverage: {
       provider: "v8",
-      include: ["src/domain/**/*.ts", "src/data/**/*.ts"],
+      include: [
+        "src/domain/**/*.ts",
+        "src/data/**/*.ts",
+        "src/server/**/*.ts",
+        "src/app/api/**/*.ts",
+      ],
       exclude: [
         "src/domain/tests/**",
         "src/domain/index.ts",
@@ -32,6 +42,9 @@ export default defineConfig({
         "src/data/tests/**",
         "src/data/index.ts",
         "src/data/seed.cli.ts",
+        "src/server/tests/**",
+        "src/server/index.ts",
+        "src/app/api/tests/**",
       ],
       thresholds: {
         statements: 100,

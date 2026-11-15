@@ -2,6 +2,13 @@
 
 ## 2026-11-15
 
+- Added the HTTP API as Next.js Route Handlers (`NextRequest`/`NextResponse`, typed `RouteContext`): `PUT /api/flags/:key`, `POST /api/flags/:key/evaluate` and `GET /api/flags/:key/audit`, with Zod-validated keys and bodies and `{ error, issues }` 400 responses
+- Added audited flag upserts recording the actor from `X-User-Id` and the previous flag
+- Added evaluation with sticky persistence that always answers the value actually stored
+- Added `POST /api/test/reset { now }`, served only when `ENABLE_TEST_ENDPOINTS=true` (on in dev compose, otherwise Next's `notFound()`), which clears flags and assignments and freezes the app clock
+- Added a service container that ensures indexes once per process and retries a failed setup
+- Added API scenario tests through the route handlers and extended the 100% coverage gate to `src/server` and `src/app/api`
+- Added Phase 3 HTTP API spec, documented the API layer and marked Phase 3 complete
 - Added the MongoDB data layer: env config, shared client, indexes and Zod-validated documents
 - Added flags, audit, users (UUID v7 ids) and cohorts repositories
 - Added race-safe sticky assignments, proven with a parallel first-write test
