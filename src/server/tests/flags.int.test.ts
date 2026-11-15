@@ -117,6 +117,23 @@ describe("flag service audit", () => {
   });
 });
 
+describe("flag service reads", () => {
+  it("gets a flag, or null for an unknown key", async () => {
+    const flags = service();
+    const flag = await flags.put("demo", BODY, null);
+    expect(await flags.get("demo")).toStrictEqual(flag);
+    expect(await flags.get("missing")).toBeNull();
+  });
+
+  it("lists every flag sorted by key", async () => {
+    const flags = service();
+    expect(await flags.list()).toEqual([]);
+    const b = await flags.put("b-flag", BODY, null);
+    const a = await flags.put("a-flag", { ...BODY, sticky: false }, null);
+    expect(await flags.list()).toStrictEqual([a, b]);
+  });
+});
+
 describe("flag service evaluate", () => {
   const USER = { userId: "u1", cohorts: [] };
   const storedValue = () =>

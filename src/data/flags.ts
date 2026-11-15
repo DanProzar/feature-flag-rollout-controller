@@ -5,6 +5,8 @@ import { type FlagDocument, FlagSchema } from "./schemas";
 export interface FlagsRepository {
   /** The flag with `key`, or `null` if there is none. */
   get(key: string): Promise<Flag | null>;
+  /** Every flag, sorted by `key`. */
+  list(): Promise<Flag[]>;
   /**
    * Creates or fully replaces the flag with `flag.key`; returns the previous flag, or `null` when
    * it was created.
@@ -19,6 +21,11 @@ export function createFlagsRepository(db: Db, clock: Clock): FlagsRepository {
     async get(key) {
       const doc = await flags.findOne({ key });
       return doc && FlagSchema.parse(doc);
+    },
+
+    async list() {
+      const docs = await flags.find().sort({ key: 1 }).toArray();
+      return docs.map((doc) => FlagSchema.parse(doc));
     },
 
     async upsert({

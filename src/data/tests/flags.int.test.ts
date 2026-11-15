@@ -91,6 +91,23 @@ describe("flags repository", () => {
     ).rejects.toThrow(/E11000/);
   });
 
+  it("lists no flags on an empty collection", async () => {
+    const flags = createFlagsRepository(t.db, frozenClock(T1));
+    expect(await flags.list()).toEqual([]);
+  });
+
+  it("lists every flag sorted by key, as domain Flags", async () => {
+    const flags = createFlagsRepository(t.db, frozenClock(T1));
+    await flags.upsert(flag({ key: "zeta" }));
+    await flags.upsert(flag({ key: "alpha", percentage: 5 }));
+    await flags.upsert(flag({ key: "mid" }));
+    expect(await flags.list()).toStrictEqual([
+      flag({ key: "alpha", percentage: 5 }),
+      flag({ key: "mid" }),
+      flag({ key: "zeta" }),
+    ]);
+  });
+
   it("throws when a stored document is malformed", async () => {
     await t.db
       .collection("flags")

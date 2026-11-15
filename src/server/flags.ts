@@ -14,6 +14,10 @@ export interface Evaluation {
 }
 
 export interface FlagService {
+  /** The flag `key`, or `null` if there is none. */
+  get(key: string): Promise<Flag | null>;
+  /** Every flag, sorted by key. */
+  list(): Promise<Flag[]>;
   /** Creates or fully replaces the flag `key` and appends one audit entry; returns the new flag. */
   put(key: string, body: PutFlagBody, actorId: string | null): Promise<Flag>;
   /**
@@ -39,6 +43,14 @@ export function createFlagService({
   clock,
 }: FlagServiceDeps): FlagService {
   return {
+    get(key) {
+      return flags.get(key);
+    },
+
+    list() {
+      return flags.list();
+    },
+
     async put(key, body, actorId) {
       const after: Flag = { key, ...body };
       const before = await flags.upsert(after);
