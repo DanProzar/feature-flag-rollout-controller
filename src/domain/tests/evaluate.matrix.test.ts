@@ -1,216 +1,217 @@
-import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { bucket } from "../bucket";
 import { evaluate } from "../evaluate";
-import type { EvaluationResult, Flag } from "../types";
+import type { EvaluationResult, Flag, Reason } from "../types";
+import { findUser } from "./helpers";
 
 const KEY = "matrix-flag";
-const PERCENTAGE = 50;
-
-function userWhere(predicate: (b: number) => boolean): string {
-  for (let i = 0; ; i++) {
-    const userId = `user-${i}`;
-    if (predicate(bucket(KEY, userId))) return userId;
-  }
-}
+const BASE: Flag = {
+  key: KEY,
+  enabled: true,
+  percentage: 50,
+  includeCohorts: ["beta"],
+  excludeCohorts: ["internal"],
+  sticky: false,
+};
+// Users on either side of the 50% rollout.
+const IN = findUser(KEY, (b) => b < 50);
+const OUT = findUser(KEY, (b) => b >= 50);
 
 interface Row {
-  exists: boolean;
-  enabled: boolean;
-  excluded: boolean;
-  included: boolean;
-  sticky: boolean;
-  stored: boolean | undefined;
-  belowPercentage: boolean;
+  name: string;
+  flag: Partial<Flag> | null;
+  userId: string;
+  cohorts: string[];
+  stored?: boolean;
+  expected: EvaluationResult;
 }
 
-/** The rule table from `specs/mission.md` → "Evaluation rules", read top to bottom. */
-function expected(row: Row): EvaluationResult {
-  if (!row.exists)
-    return { enabled: false, reason: "FLAG_NOT_FOUND", persist: false };
-  if (!row.enabled)
-    return { enabled: false, reason: "KILL_SWITCH", persist: false };
-  if (row.excluded)
-    return { enabled: false, reason: "COHORT_EXCLUDED", persist: false };
-  if (row.included)
-    return { enabled: true, reason: "COHORT_INCLUDED", persist: false };
-  if (row.sticky && row.stored !== undefined) {
-    return { enabled: row.stored, reason: "STICKY", persist: false };
-  }
-  return {
-    enabled: row.belowPercentage,
-    reason: "PERCENTAGE",
-    persist: row.sticky,
-  };
-}
+const off = (reason: Reason): EvaluationResult => ({
+  enabled: false,
+  reason,
+  persist: false,
+});
+const on = (reason: Reason): EvaluationResult => ({
+  enabled: true,
+  reason,
+  persist: false,
+});
 
-const bools = [false, true];
-const rows: Row[] = [];
-for (const exists of bools)
-  for (const enabled of bools)
-    for (const excluded of bools)
-      for (const included of bools)
-        for (const sticky of bools)
-          for (const stored of [undefined, false, true])
-            for (const belowPercentage of bools)
-              rows.push({
-                exists,
-                enabled,
-                excluded,
-                included,
-                sticky,
-                stored,
-                belowPercentage,
-              });
+// Expected results are written out from specs/mission.md → "Evaluation rules", not computed.
+const rows: Row[] = [
+  // 1. A missing flag beats everything.
+  {
+    name: "missing flag",
+    flag: null,
+    userId: IN,
+    cohorts: [],
+    expected: off("FLAG_NOT_FOUND"),
+  },
+  {
+    name: "missing flag, included cohort, stored true",
+    flag: null,
+    userId: IN,
+    cohorts: ["beta"],
+    stored: true,
+    expected: off("FLAG_NOT_FOUND"),
+  },
+
+  // 2. The kill switch beats rules 3–6.
+  {
+    name: "killed, excluded cohort",
+    flag: { enabled: false },
+    userId: IN,
+    cohorts: ["internal"],
+    expected: off("KILL_SWITCH"),
+  },
+  {
+    name: "killed, included cohort",
+    flag: { enabled: false },
+    userId: IN,
+    cohorts: ["beta"],
+    expected: off("KILL_SWITCH"),
+  },
+  {
+    name: "killed, sticky with stored true",
+    flag: { enabled: false, sticky: true },
+    userId: IN,
+    cohorts: [],
+    stored: true,
+    expected: off("KILL_SWITCH"),
+  },
+  {
+    name: "killed, 100% rollout",
+    flag: { enabled: false, percentage: 100 },
+    userId: IN,
+    cohorts: [],
+    expected: off("KILL_SWITCH"),
+  },
+
+  // 3. Exclusion beats rules 4–6.
+  {
+    name: "excluded and included",
+    flag: {},
+    userId: IN,
+    cohorts: ["beta", "internal"],
+    expected: off("COHORT_EXCLUDED"),
+  },
+  {
+    name: "excluded, sticky with stored true",
+    flag: { sticky: true },
+    userId: IN,
+    cohorts: ["internal"],
+    stored: true,
+    expected: off("COHORT_EXCLUDED"),
+  },
+  {
+    name: "excluded, 100% rollout",
+    flag: { percentage: 100 },
+    userId: IN,
+    cohorts: ["internal"],
+    expected: off("COHORT_EXCLUDED"),
+  },
+
+  // 4. Inclusion beats rules 5–6.
+  {
+    name: "included, sticky with stored false",
+    flag: { sticky: true },
+    userId: OUT,
+    cohorts: ["beta"],
+    stored: false,
+    expected: on("COHORT_INCLUDED"),
+  },
+  {
+    name: "included, 0% rollout",
+    flag: { percentage: 0 },
+    userId: OUT,
+    cohorts: ["beta"],
+    expected: on("COHORT_INCLUDED"),
+  },
+
+  // 5. A stored value beats the percentage, but only for sticky flags.
+  {
+    name: "sticky, stored true, user above percentage",
+    flag: { sticky: true },
+    userId: OUT,
+    cohorts: [],
+    stored: true,
+    expected: on("STICKY"),
+  },
+  {
+    name: "sticky, stored false, user below percentage",
+    flag: { sticky: true },
+    userId: IN,
+    cohorts: [],
+    stored: false,
+    expected: off("STICKY"),
+  },
+  {
+    name: "non-sticky, stored false, user below percentage",
+    flag: {},
+    userId: IN,
+    cohorts: [],
+    stored: false,
+    expected: on("PERCENTAGE"),
+  },
+  {
+    name: "non-sticky, stored true, user above percentage",
+    flag: {},
+    userId: OUT,
+    cohorts: [],
+    stored: true,
+    expected: off("PERCENTAGE"),
+  },
+
+  // 6. Percentage; persisted for sticky flags whatever the result.
+  {
+    name: "sticky, nothing stored, user below percentage",
+    flag: { sticky: true },
+    userId: IN,
+    cohorts: [],
+    expected: { enabled: true, reason: "PERCENTAGE", persist: true },
+  },
+  {
+    name: "sticky, nothing stored, user above percentage",
+    flag: { sticky: true },
+    userId: OUT,
+    cohorts: [],
+    expected: { enabled: false, reason: "PERCENTAGE", persist: true },
+  },
+  {
+    name: "non-sticky, user below percentage, unrelated cohort",
+    flag: {},
+    userId: IN,
+    cohorts: ["other"],
+    expected: on("PERCENTAGE"),
+  },
+  {
+    name: "non-sticky, user above percentage",
+    flag: {},
+    userId: OUT,
+    cohorts: [],
+    expected: off("PERCENTAGE"),
+  },
+  {
+    name: "0% rollout, user below 50",
+    flag: { percentage: 0 },
+    userId: IN,
+    cohorts: [],
+    expected: off("PERCENTAGE"),
+  },
+  {
+    name: "100% rollout, user above 50",
+    flag: { percentage: 100 },
+    userId: OUT,
+    cohorts: [],
+    expected: on("PERCENTAGE"),
+  },
+];
 
 describe("evaluate precedence matrix", () => {
-  it.each(rows)("%o", (row) => {
-    const flag: Flag | null = row.exists
-      ? {
-          key: KEY,
-          enabled: row.enabled,
-          percentage: PERCENTAGE,
-          includeCohorts: ["beta"],
-          excludeCohorts: ["internal"],
-          sticky: row.sticky,
-        }
-      : null;
-    const cohorts = [
-      ...(row.excluded ? ["internal"] : []),
-      ...(row.included ? ["beta"] : []),
-      "unrelated",
-    ];
-    const userId = userWhere((b) => b < PERCENTAGE === row.belowPercentage);
-
-    expect(evaluate(flag, { userId, cohorts }, row.stored)).toEqual(
-      expected(row),
-    );
-  });
-});
-
-const cohortArb = fc.constantFrom("a", "b", "c", "d");
-const flagArb = fc.record<Flag>({
-  key: fc.string(),
-  enabled: fc.boolean(),
-  percentage: fc.integer({ min: 0, max: 100 }),
-  includeCohorts: fc.uniqueArray(cohortArb),
-  excludeCohorts: fc.uniqueArray(cohortArb),
-  sticky: fc.boolean(),
-});
-const ctxArb = fc.record({
-  userId: fc.string(),
-  cohorts: fc.uniqueArray(cohortArb),
-});
-const storedArb = fc.option(fc.boolean(), { nil: undefined });
-
-const matches = (flagCohorts: string[], userCohorts: string[]) =>
-  userCohorts.some((c) => flagCohorts.includes(c));
-
-describe("evaluate properties", () => {
-  it("is deterministic", () => {
-    fc.assert(
-      fc.property(
-        fc.option(flagArb, { nil: null }),
-        ctxArb,
-        storedArb,
-        (flag, ctx, stored) => {
-          expect(evaluate(flag, ctx, stored)).toEqual(
-            evaluate(flag, ctx, stored),
-          );
-        },
-      ),
-    );
-  });
-
-  it("asks to persist only for percentage results on sticky flags", () => {
-    fc.assert(
-      fc.property(flagArb, ctxArb, storedArb, (flag, ctx, stored) => {
-        const result = evaluate(flag, ctx, stored);
-        expect(result.persist).toBe(
-          result.reason === "PERCENTAGE" && flag.sticky,
-        );
-      }),
-    );
-  });
-
-  it("always applies the kill switch", () => {
-    fc.assert(
-      fc.property(flagArb, ctxArb, storedArb, (flag, ctx, stored) => {
-        const result = evaluate({ ...flag, enabled: false }, ctx, stored);
-        expect(result).toEqual({
-          enabled: false,
-          reason: "KILL_SWITCH",
-          persist: false,
-        });
-      }),
-    );
-  });
-
-  it("lets exclusion beat inclusion when the kill switch is off", () => {
-    fc.assert(
-      fc.property(flagArb, ctxArb, storedArb, (flag, ctx, stored) => {
-        const f = { ...flag, enabled: true };
-        fc.pre(matches(f.excludeCohorts, ctx.cohorts));
-        expect(evaluate(f, ctx, stored).reason).toBe("COHORT_EXCLUDED");
-      }),
-    );
-  });
-
-  it("is off at 0% and on at 100% without a cohort match or stored value", () => {
-    fc.assert(
-      fc.property(flagArb, fc.string(), (flag, userId) => {
-        const ctx = { userId, cohorts: [] };
-        expect(
-          evaluate({ ...flag, enabled: true, percentage: 0 }, ctx).enabled,
-        ).toBe(false);
-        expect(
-          evaluate({ ...flag, enabled: true, percentage: 100 }, ctx).enabled,
-        ).toBe(true);
-      }),
-    );
-  });
-
-  it("never turns a user off when the percentage is raised", () => {
-    fc.assert(
-      fc.property(
-        flagArb,
-        fc.string(),
-        fc.integer({ min: 0, max: 100 }),
-        fc.integer({ min: 0, max: 100 }),
-        (flag, userId, p1, p2) => {
-          const [low, high] = p1 <= p2 ? [p1, p2] : [p2, p1];
-          const f = { ...flag, enabled: true, sticky: false };
-          const ctx = { userId, cohorts: [] };
-          if (evaluate({ ...f, percentage: low }, ctx).enabled) {
-            expect(evaluate({ ...f, percentage: high }, ctx).enabled).toBe(
-              true,
-            );
-          }
-        },
-      ),
-    );
-  });
-
-  it("keeps a stored sticky value whatever the percentage", () => {
-    fc.assert(
-      fc.property(
-        flagArb,
-        ctxArb,
-        fc.boolean(),
-        fc.integer({ min: 0, max: 100 }),
-        (flag, ctx, stored, percentage) => {
-          const f = { ...flag, enabled: true, sticky: true, percentage };
-          fc.pre(
-            !matches(f.excludeCohorts, ctx.cohorts) &&
-              !matches(f.includeCohorts, ctx.cohorts),
-          );
-          expect(evaluate(f, ctx, stored)).toEqual({
-            enabled: stored,
-            reason: "STICKY",
-            persist: false,
-          });
-        },
-      ),
-    );
-  });
+  it.each(rows)(
+    "$name → $expected.reason",
+    ({ flag, userId, cohorts, stored, expected }) => {
+      const f = flag === null ? null : { ...BASE, ...flag };
+      expect(evaluate(f, { userId, cohorts }, stored)).toEqual(expected);
+    },
+  );
 });

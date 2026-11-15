@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { bucket } from "../bucket";
 import { evaluate } from "../evaluate";
 import type { Flag } from "../types";
+import { findUser } from "./helpers";
 
 const KEY = "new-checkout";
 
@@ -17,16 +18,9 @@ function flag(overrides: Partial<Flag> = {}): Flag {
   };
 }
 
-/** Finds a userId whose bucket for `KEY` satisfies `predicate`. */
-function userWhere(predicate: (b: number) => boolean): string {
-  for (let i = 0; ; i++) {
-    const userId = `user-${i}`;
-    if (predicate(bucket(KEY, userId))) return userId;
-  }
-}
-
-const userIn = userWhere((b) => b < 50);
-const userOut = userWhere((b) => b >= 50);
+// Users on either side of the default 50% rollout.
+const userIn = findUser(KEY, (b) => b < 50);
+const userOut = findUser(KEY, (b) => b >= 50);
 
 describe("evaluate", () => {
   describe("FLAG_NOT_FOUND", () => {

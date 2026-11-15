@@ -57,8 +57,8 @@ Add one rule at a time to `src/domain/evaluate.ts`, each with its own tests in
    - With no cohort match and no stored value, `enabled === bucket < percentage` for every
      percentage 0–100; raising the percentage never turns a user off.
    - A stored sticky value is returned whatever the percentage.
-   - `src/domain/index.ts` exports the public API.
-3. Run tests, commit.
+3. `src/domain/tests/index.test.ts`: `src/domain/index.ts` exports the public API.
+4. Run tests, commit.
 
 ## 6. Clock (roadmap item 13)
 1. `src/domain/tests/clock.test.ts`: `systemClock.now()` is within a small window of `Date.now()`;
