@@ -28,3 +28,13 @@ export const AssignmentDocumentSchema = z.object({
   createdAt: z.date(),
 });
 export type AssignmentDocument = z.infer<typeof AssignmentDocumentSchema>;
+
+/** One admin change to a flag; `before` is `null` when the change created it. */
+export const AuditEntrySchema = z.object({
+  at: z.date(),
+  key: z.string().min(1),
+  actorId: z.string().nullable(),
+  before: FlagSchema.nullable(),
+  after: FlagSchema,
+});
+export type AuditEntry = z.infer<typeof AuditEntrySchema>;

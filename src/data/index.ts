@@ -6,3 +6,6 @@ export type { FlagsRepository } from "./flags";
 export { createFlagsRepository } from "./flags";
 export type { AssignmentsRepository } from "./assignments";
 export { createAssignmentsRepository } from "./assignments";
+export type { AuditRepository } from "./audit";
+export { createAuditRepository } from "./audit";
+export type { AuditEntry } from "./schemas";
