@@ -1,8 +1,8 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { bucket } from "./bucket";
-import { evaluate } from "./evaluate";
-import type { EvaluationResult, Flag } from "./types";
+import { bucket } from "../bucket";
+import { evaluate } from "../evaluate";
+import type { EvaluationResult, Flag } from "../types";
 
 const KEY = "matrix-flag";
 const PERCENTAGE = 50;

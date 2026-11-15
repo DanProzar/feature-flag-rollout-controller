@@ -45,7 +45,7 @@ Strictly roadmap items 4–13:
 
 | Topic | Decision | Rationale |
 |-------|----------|-----------|
-| Layout | **Split modules**: `types.ts`, `bucket.ts`, `evaluate.ts`, `clock.ts`, `index.ts`, each with a colocated `*.test.ts` | Small focused files map 1:1 to roadmap items and keep tests readable. |
+| Layout | **Split modules**: `types.ts`, `bucket.ts`, `evaluate.ts`, `clock.ts`, `index.ts`, with tests in `src/domain/tests/*.test.ts` | Small focused files map 1:1 to roadmap items and keep tests readable. |
 | Signature | `evaluate(flag \| null, ctx, stickyValue?)` | Matches `tech-stack.md`; `null` models "not found" so the caller passes the repository result straight through. |
 | `persist` | Always present as a boolean | Callers branch on one field with no `undefined` case. |
 | `Flag` shape | Mirrors `mission.md` only — no `_id`, `description`, `createdAt`, `updatedAt` | The domain doesn't care about storage metadata; Phase 2 maps documents to `Flag`. |

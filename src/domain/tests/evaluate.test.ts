@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { bucket } from "./bucket";
-import { evaluate } from "./evaluate";
-import type { Flag } from "./types";
+import { bucket } from "../bucket";
+import { evaluate } from "../evaluate";
+import type { Flag } from "../types";
 
 const KEY = "new-checkout";
 

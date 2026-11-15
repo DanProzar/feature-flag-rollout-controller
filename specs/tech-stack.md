@@ -119,4 +119,5 @@ src/
 
 - Validate all request bodies with Zod; return `400` with details on failure.
 - Config via environment variables (`MONGODB_URI`, `MONGODB_DB`, `ENABLE_TEST_ENDPOINTS`).
-- Tests colocated as `*.test.ts`; integration tests in `*.int.test.ts`.
+- Tests live in a `tests/` folder inside the module they cover (e.g. `src/domain/tests/*.test.ts`);
+  integration tests are named `*.int.test.ts`.

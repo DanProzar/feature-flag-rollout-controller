@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { frozenClock, systemClock } from "./clock";
+import { frozenClock, systemClock } from "../clock";
 
 describe("systemClock", () => {
   it("returns the current time", () => {

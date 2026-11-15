@@ -1,7 +1,7 @@
 import { crc32 } from "node:zlib";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { bucket } from "./bucket";
+import { bucket } from "../bucket";
 
 describe("bucket", () => {
   it("uses standard CRC-32 (IEEE 802.3 check value)", () => {
