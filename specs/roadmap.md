@@ -48,15 +48,19 @@ is committed on its own.
     reset keeps audit; create vs. update audit (`before: null`); missing `X-User-Id` → `actorId: null`;
     PUT missing a field → `400`; sticky flag keeps value after percentage drops; non-sticky flag
     follows new percentage; kill/exclude/include override sticky without overwriting it.
+27. Seed data: idempotent seed script populating a `users` collection with 5–7 users
+    (`{ userId, name, cohorts }`) spread across the cohorts `admin`, `tester`, `user` and
+    `developer` (every cohort used at least once; some users in more than one). Runnable via an npm
+    script and on compose startup; reset leaves seeded users untouched.
 
 ## Phase 4 — Admin UI (`src/app`, built with shadcn/ui)
-27. Flags list page (key, kill state, percentage, sticky, cohorts) using `Table` and `Badge`.
-28. Create/edit flag form (percentage `Slider`, include/exclude cohort editors, sticky `Switch`),
+28. Flags list page (key, kill state, percentage, sticky, cohorts) using `Table` and `Badge`.
+29. Create/edit flag form (percentage `Slider`, include/exclude cohort editors, sticky `Switch`),
     saving via `PUT`.
-29. Prominent kill-switch `Switch` with an `AlertDialog` confirmation.
-30. "Try it" evaluator panel (`Card`): enter userId + cohorts, see `enabled` + `reason`.
-31. Audit history view per flag: time, actor, before → after diff.
+30. Prominent kill-switch `Switch` with an `AlertDialog` confirmation.
+31. "Try it" evaluator panel (`Card`): enter userId + cohorts, see `enabled` + `reason`.
+32. Audit history view per flag: time, actor, before → after diff.
 
 ## Phase 5 — Polish
-32. Error, loading and empty states (shadcn `Skeleton`, `Alert`, `Sonner` toasts).
-33. README: run instructions (`docker compose up`), API examples with `curl`.
+33. Error, loading and empty states (shadcn `Skeleton`, `Alert`, `Sonner` toasts).
+34. README: run instructions (`docker compose up`), API examples with `curl`.
