@@ -17,7 +17,8 @@ export default function RootLayout({
 }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en" className={cn("font-sans", geist.variable)}>
-      <body>{children}</body>
+      {/* Browser extensions (e.g. Grammarly) inject attributes into <body> before hydration. */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }
