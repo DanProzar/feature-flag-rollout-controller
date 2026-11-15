@@ -34,10 +34,12 @@ is committed on its own.
 17. Concurrency test: parallel first evaluations for one user yield a single stored value.
 18. Audit repository: append entry, list by key oldest first.
 19. Reset function: clear flags and assignments; audit untouched.
-20. Seed data: idempotent seed script populating a `users` collection with 5–7 users
-    (`{ userId, name, cohorts }`) spread across the cohorts `admin`, `tester`, `user` and
-    `developer` (every cohort used at least once; some users in more than one). Runnable via an npm
-    script and on compose startup; reset leaves seeded users untouched.
+20. Users and cohorts repositories (get, list, create, update, delete, clear) and seed data: a seed
+    script populating `cohorts` (`admin`, `tester`, `user`, `developer`), `users` (5–7
+    `{ userId, name, cohorts }` with UUID v7 `userId`s from the `uuid` library, every cohort used at least once, some users in more than one) and
+    5 demo `flags` (one per evaluation reason, no audit entries). Each collection is seeded only
+    when empty. Runnable via an npm script and on compose startup; reset leaves cohorts and users
+    untouched (flags return on the next seed run).
 
 ## Phase 3 — HTTP API (`src/app/api`)
 21. Zod schemas: PUT body (all five fields required), evaluate body, reset body (`now` required).
@@ -64,3 +66,9 @@ is committed on its own.
 ## Phase 5 — Polish
 33. Error, loading and empty states (shadcn `Skeleton`, `Alert`, `Sonner` toasts).
 34. README: run instructions (`docker compose up`), API examples with `curl`.
+
+## Phase 6 — Demo page (`src/app/demo`)
+35. `/demo` page in the existing app that calls `POST /api/flags/:key/evaluate` like a real client.
+36. User switcher → flag grid: pick a seeded user, see every seeded flag's `enabled` + `reason`.
+37. Mock product UI: a fake storefront whose features (checkout, dark mode, search, banner,
+    assistant) appear or disappear according to the seeded flags for the selected user.
