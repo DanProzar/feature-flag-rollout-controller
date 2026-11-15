@@ -2,6 +2,14 @@
 
 ## 2026-11-15
 
+- Added the MongoDB data layer: env config, shared client, indexes and Zod-validated documents
+- Added flags, audit, users (UUID v7 ids) and cohorts repositories
+- Added race-safe sticky assignments, proven with a parallel first-write test
+- Added a reset that clears flags and sticky assignments while keeping the audit log
+- Added seed cohorts, users and flags, runnable with `npm run seed` and as a one-shot compose service
+- Split tests into unit and integration projects, with integration tests against a real MongoDB and a 100% coverage gate on `src/data`
+- Added Phase 2 persistence spec and moved seed data into Phase 2 on the roadmap
+- Marked Phase 2 complete and documented the data layer in the tech stack
 - Added the pure flag evaluator: kill switch, cohort exclude/include, sticky and percentage rules
 - Added CRC32 user bucketing with pinned reference values
 - Added an injectable clock with real and frozen implementations
