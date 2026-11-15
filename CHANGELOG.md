@@ -2,10 +2,10 @@
 
 ## 2026-11-15
 
-- Added the HTTP API: `PUT /api/flags/:key`, `POST /api/flags/:key/evaluate` and `GET /api/flags/:key/audit`, with Zod-validated keys and bodies and `{ error, issues }` 400 responses
+- Added the HTTP API as Next.js Route Handlers (`NextRequest`/`NextResponse`, typed `RouteContext`): `PUT /api/flags/:key`, `POST /api/flags/:key/evaluate` and `GET /api/flags/:key/audit`, with Zod-validated keys and bodies and `{ error, issues }` 400 responses
 - Added audited flag upserts recording the actor from `X-User-Id` and the previous flag
 - Added evaluation with sticky persistence that always answers the value actually stored
-- Added `POST /api/test/reset { now }`, served only when `ENABLE_TEST_ENDPOINTS=true` (on in dev compose), which clears flags and assignments and freezes the app clock
+- Added `POST /api/test/reset { now }`, served only when `ENABLE_TEST_ENDPOINTS=true` (on in dev compose, otherwise Next's `notFound()`), which clears flags and assignments and freezes the app clock
 - Added a service container that ensures indexes once per process and retries a failed setup
 - Added API scenario tests through the route handlers and extended the 100% coverage gate to `src/server` and `src/app/api`
 - Added Phase 3 HTTP API spec, documented the API layer and marked Phase 3 complete
