@@ -1,5 +1,6 @@
-import { type Db, MongoServerError } from "mongodb";
+import type { Db } from "mongodb";
 import type { Clock } from "../domain";
+import { isDuplicateKeyError } from "./errors";
 import { type AssignmentDocument, AssignmentDocumentSchema } from "./schemas";
 
 export interface AssignmentsRepository {
@@ -14,12 +15,6 @@ export interface AssignmentsRepository {
     userId: string,
     value: boolean,
   ): Promise<boolean>;
-}
-
-const DUPLICATE_KEY = 11000;
-
-export function isDuplicateKeyError(error: unknown): boolean {
-  return error instanceof MongoServerError && error.code === DUPLICATE_KEY;
 }
 
 export function createAssignmentsRepository(

@@ -51,3 +51,11 @@ export const UserSchema = z.object({
   cohorts: z.array(z.string()),
 });
 export type User = z.infer<typeof UserSchema>;
+
+/** A named cohort; a catalogue for UIs, not referenced by flags or users. */
+export const CohortSchema = z.object({
+  key: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string(),
+});
+export type Cohort = z.infer<typeof CohortSchema>;

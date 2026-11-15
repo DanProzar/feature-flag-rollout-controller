@@ -13,3 +13,7 @@ export { resetFlagsAndAssignments } from "./reset";
 export type { NewUser, UsersRepository } from "./users";
 export { createUsersRepository } from "./users";
 export type { User } from "./schemas";
+export type { CohortsRepository } from "./cohorts";
+export { createCohortsRepository } from "./cohorts";
+export type { Cohort } from "./schemas";
+export { DuplicateCohortError } from "./errors";
