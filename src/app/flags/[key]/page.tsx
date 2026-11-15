@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { AuditHistory } from "@/components/audit-history";
 import { FlagForm } from "@/components/flag-form";
 import { KillSwitch } from "@/components/kill-switch";
 import { TryIt } from "@/components/try-it";
@@ -13,10 +14,11 @@ export default async function FlagPage({ params }: PageProps<"/flags/[key]">) {
   if (!FlagKeySchema.safeParse(key).success) notFound();
 
   const services = await getServices();
-  const [flag, cohorts, users] = await Promise.all([
+  const [flag, cohorts, users, entries] = await Promise.all([
     services.flags.get(key),
     services.catalog.cohorts(),
     services.catalog.users(),
+    services.flags.audit(key),
   ]);
   if (!flag) notFound();
   const cohortOptions = cohorts.map(({ key, name }) => ({ key, name }));
@@ -54,6 +56,11 @@ export default async function FlagPage({ params }: PageProps<"/flags/[key]">) {
           cohorts={cohortOptions}
         />
       </div>
+
+      <AuditHistory
+        entries={entries}
+        userNames={new Map(users.map((user) => [user.userId, user.name]))}
+      />
     </div>
   );
 }

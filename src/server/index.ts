@@ -1,3 +1,4 @@
+export type { AuditEntry } from "../data";
 export type { CatalogService } from "./catalog";
 export { createCatalogService } from "./catalog";
 export { appClock, freezeClock, unfreezeClock } from "./clock";
