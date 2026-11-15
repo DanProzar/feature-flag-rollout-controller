@@ -11,7 +11,7 @@ is committed on its own.
    Follow-up: shadcn/ui on Tailwind CSS v4 initialised (`components.json`, `src/components/ui`,
    `src/lib/utils.ts`, theme tokens in `globals.css`).
 
-## Phase 1 — Pure evaluator (`src/domain`)
+## Phase 1 — Pure evaluator (`src/domain`) ✅ Complete
 4. Define types: `Flag`, `EvaluationContext`, `EvaluationResult`, `Reason`.
 5. Rule: flag not found → `false` / `FLAG_NOT_FOUND`.
 6. Rule: kill switch → `false` / `KILL_SWITCH`.
