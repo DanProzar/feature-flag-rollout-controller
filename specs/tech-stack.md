@@ -25,7 +25,7 @@ src/
   lib/utils.ts   # shared UI helpers (`cn` class-name merging)
 ```
 
-- **Domain is pure**: `evaluate(flag, user, cohorts, stickyValue?) -> { enabled, reason, persist? }`.
+- **Domain is pure**: `evaluate(flag | null, { userId, cohorts }, stickyValue?) -> { enabled, reason, persist }`.
   No database or framework imports, so it's trivially unit-testable.
 - **Data layer** wraps MongoDB behind small repository functions (flags, assignments, audit).
 - **API layer** composes them: load flag → load sticky → evaluate → persist sticky if needed.
