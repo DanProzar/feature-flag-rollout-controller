@@ -25,7 +25,7 @@ src/
   lib/utils.ts   # shared UI helpers (`cn` class-name merging)
 ```
 
-- **Domain is pure**: `evaluate(flag, user, cohorts, stickyValue?) -> { enabled, reason, persist? }`.
+- **Domain is pure**: `evaluate(flag | null, { userId, cohorts }, stickyValue?) -> { enabled, reason, persist }`.
   No database or framework imports, so it's trivially unit-testable.
 - **Data layer** wraps MongoDB behind small repository functions (flags, assignments, audit).
 - **API layer** composes them: load flag → load sticky → evaluate → persist sticky if needed.
@@ -119,4 +119,5 @@ src/
 
 - Validate all request bodies with Zod; return `400` with details on failure.
 - Config via environment variables (`MONGODB_URI`, `MONGODB_DB`, `ENABLE_TEST_ENDPOINTS`).
-- Tests colocated as `*.test.ts`; integration tests in `*.int.test.ts`.
+- Tests live in a `tests/` folder inside the module they cover (e.g. `src/domain/tests/*.test.ts`);
+  integration tests are named `*.int.test.ts`.
