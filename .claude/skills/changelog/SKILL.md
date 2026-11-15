@@ -1,7 +1,6 @@
 ---
 name: changelog
 description: Create or update CHANGELOG.md in the project root with date-headed bullet entries. Bootstraps the file from git history if it doesn't exist; otherwise adds entries for the current branch's changes. Run manually before merging a branch.
-disable-model-invocation: true
 argument-hint: "[base-branch]"
 allowed-tools: Bash(git log:*), Bash(git diff:*), Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git merge-base:*), Bash(git add CHANGELOG.md), Bash(git commit:*), Read, Edit, Write
 ---
