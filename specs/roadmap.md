@@ -34,24 +34,24 @@ is committed on its own.
 17. Concurrency test: parallel first evaluations for one user yield a single stored value.
 18. Audit repository: append entry, list by key oldest first.
 19. Reset function: clear flags and assignments; audit untouched.
-
-## Phase 3 — HTTP API (`src/app/api`)
-20. Zod schemas: PUT body (all five fields required), evaluate body, reset body (`now` required).
-21. `POST /api/test/reset { now }`: clears flags + sticky, freezes the clock at `now`; mounted only
-    when `ENABLE_TEST_ENDPOINTS=true`.
-22. `PUT /api/flags/:key`: full-replace upsert → `200 { flag }`; `400` on missing/invalid fields.
-23. Audit on PUT: append `{ at, key, actorId, before, after }`, `actorId` from `X-User-Id` or `null`.
-24. `GET /api/flags/:key/audit` → list of entries.
-25. `POST /api/flags/:key/evaluate { userId, cohorts }`: load flag → load sticky (only if
-    `flag.sticky`) → evaluate → persist if needed → `200 { enabled, reason }`.
-26. API integration tests: reset with `now` gives exact `at` values; reset without `now` → `400`;
-    reset keeps audit; create vs. update audit (`before: null`); missing `X-User-Id` → `actorId: null`;
-    PUT missing a field → `400`; sticky flag keeps value after percentage drops; non-sticky flag
-    follows new percentage; kill/exclude/include override sticky without overwriting it.
-27. Seed data: idempotent seed script populating a `users` collection with 5–7 users
+20. Seed data: idempotent seed script populating a `users` collection with 5–7 users
     (`{ userId, name, cohorts }`) spread across the cohorts `admin`, `tester`, `user` and
     `developer` (every cohort used at least once; some users in more than one). Runnable via an npm
     script and on compose startup; reset leaves seeded users untouched.
+
+## Phase 3 — HTTP API (`src/app/api`)
+21. Zod schemas: PUT body (all five fields required), evaluate body, reset body (`now` required).
+22. `POST /api/test/reset { now }`: clears flags + sticky, freezes the clock at `now`; mounted only
+    when `ENABLE_TEST_ENDPOINTS=true`.
+23. `PUT /api/flags/:key`: full-replace upsert → `200 { flag }`; `400` on missing/invalid fields.
+24. Audit on PUT: append `{ at, key, actorId, before, after }`, `actorId` from `X-User-Id` or `null`.
+25. `GET /api/flags/:key/audit` → list of entries.
+26. `POST /api/flags/:key/evaluate { userId, cohorts }`: load flag → load sticky (only if
+    `flag.sticky`) → evaluate → persist if needed → `200 { enabled, reason }`.
+27. API integration tests: reset with `now` gives exact `at` values; reset without `now` → `400`;
+    reset keeps audit; create vs. update audit (`before: null`); missing `X-User-Id` → `actorId: null`;
+    PUT missing a field → `400`; sticky flag keeps value after percentage drops; non-sticky flag
+    follows new percentage; kill/exclude/include override sticky without overwriting it.
 
 ## Phase 4 — Admin UI (`src/app`, built with shadcn/ui)
 28. Flags list page (key, kill state, percentage, sticky, cohorts) using `Table` and `Badge`.
