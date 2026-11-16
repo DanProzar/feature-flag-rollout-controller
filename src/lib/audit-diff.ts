@@ -11,6 +11,15 @@ export interface FieldChange {
   after: Flag[FlagField] | undefined;
 }
 
+/** How each field is named in the audit history and toasts. */
+export const FIELD_LABELS: Record<FlagField, string> = {
+  enabled: "state",
+  percentage: "percentage",
+  includeCohorts: "include",
+  excludeCohorts: "exclude",
+  sticky: "sticky",
+};
+
 const FIELDS: readonly FlagField[] = [
   "enabled",
   "percentage",

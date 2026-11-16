@@ -7,16 +7,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { diffFlags, formatFieldValue } from "@/lib/audit-diff";
+import { diffFlags, FIELD_LABELS, formatFieldValue } from "@/lib/audit-diff";
 import type { AuditEntry } from "@/server";
-
-const FIELD_LABELS = {
-  enabled: "state",
-  percentage: "percentage",
-  includeCohorts: "include",
-  excludeCohorts: "exclude",
-  sticky: "sticky",
-} as const;
 
 /** "2026-01-01 00:00:00 UTC": the same on every server and browser. */
 function formatAt(at: Date): string {

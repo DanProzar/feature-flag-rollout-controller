@@ -3,6 +3,7 @@ import {
   deleteFlag,
   evaluateFlag,
   putFlag,
+  resetData,
   setUserCohorts,
 } from "../api-client";
 
@@ -216,5 +217,62 @@ describe("setUserCohorts", () => {
   it("uses the global fetch by default", async () => {
     vi.stubGlobal("fetch", respond(200, { user: USER }));
     expect((await setUserCohorts("u1", [])).ok).toBe(true);
+  });
+});
+
+describe("resetData", () => {
+  const NOW = "2026-01-01T00:00:00.000Z";
+
+  it("POSTs { now } as ISO without X-User-Id and returns the recorded time", async () => {
+    const fetchFn = respond(200, { now: NOW });
+    const result = await resetData(
+      new Date("2026-01-01T02:00:00+02:00"),
+      fetchFn,
+    );
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.now.toISOString()).toBe(NOW);
+    const request = sent(fetchFn);
+    expect(request.url).toBe("/api/test/reset");
+    expect(request.method).toBe("POST");
+    expect(request.headers.get("content-type")).toBe("application/json");
+    expect(request.headers.has("x-user-id")).toBe(false);
+    expect(request.body).toStrictEqual({ now: NOW });
+  });
+
+  it("returns the error and issues of a 400", async () => {
+    const fetchFn = respond(400, {
+      error: "Invalid request body",
+      issues: { now: ["Invalid date"] },
+    });
+    expect(await resetData(new Date(NOW), fetchFn)).toStrictEqual({
+      ok: false,
+      error: "Invalid request body",
+      issues: { now: ["Invalid date"] },
+    });
+  });
+
+  it.each([
+    [404, "<!DOCTYPE html>", "Request failed (404)"],
+    [500, { error: "Internal server error" }, "Internal server error"],
+  ])("returns a failure for a %i", async (status, body, error) => {
+    expect(await resetData(new Date(NOW), respond(status, body))).toStrictEqual(
+      { ok: false, error, issues: {} },
+    );
+  });
+
+  it("reports a network error", async () => {
+    const fetchFn = vi.fn<typeof fetch>(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    expect(await resetData(new Date(NOW), fetchFn)).toStrictEqual({
+      ok: false,
+      error: "Network error: Failed to fetch",
+      issues: {},
+    });
+  });
+
+  it("uses the global fetch by default", async () => {
+    vi.stubGlobal("fetch", respond(200, { now: NOW }));
+    expect((await resetData(new Date(NOW))).ok).toBe(true);
   });
 });

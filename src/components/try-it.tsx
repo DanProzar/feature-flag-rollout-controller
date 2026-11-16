@@ -143,8 +143,8 @@ export function TryIt({
                 <Badge
                   className={
                     result.enabled
-                      ? "bg-emerald-600 text-white dark:bg-emerald-500"
-                      : "bg-red-600 text-white dark:bg-red-500"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-red-600 text-white"
                   }
                 >
                   {result.enabled ? "true" : "false"}

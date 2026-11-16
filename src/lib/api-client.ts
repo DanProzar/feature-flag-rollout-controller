@@ -18,6 +18,8 @@ export type DeleteFlagResult = { ok: true; flag: Flag } | ApiFailure;
 
 export type SetUserCohortsResult = { ok: true; user: User } | ApiFailure;
 
+export type ResetDataResult = { ok: true; now: Date } | ApiFailure;
+
 export type EvaluateFlagResult =
   { ok: true; enabled: boolean; reason: Reason } | ApiFailure;
 
@@ -129,4 +131,24 @@ export async function evaluateFlag(
   return result.ok
     ? { ok: true, enabled: result.body.enabled, reason: result.body.reason }
     : result;
+}
+
+/**
+ * `POST /api/test/reset`: clears flags and sticky assignments, recording `now` as the reset time.
+ * Answers `404` unless the server has `ENABLE_TEST_ENDPOINTS=true`.
+ */
+export async function resetData(
+  now: Date,
+  fetchFn: typeof fetch = globalFetch,
+): Promise<ResetDataResult> {
+  const result = await request<{ now: string }>(
+    "/api/test/reset",
+    {
+      method: "POST",
+      headers: headers(null),
+      body: JSON.stringify({ now: now.toISOString() }),
+    },
+    fetchFn,
+  );
+  return result.ok ? { ok: true, now: new Date(result.body.now) } : result;
 }

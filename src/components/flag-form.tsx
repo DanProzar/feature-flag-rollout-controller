@@ -215,7 +215,7 @@ function Field({
         </p>
       ))}
       {warnings?.map((message) => (
-        <p key={message} className="text-sm text-amber-600 dark:text-amber-400">
+        <p key={message} className="text-sm text-amber-600">
           {message}
         </p>
       ))}
