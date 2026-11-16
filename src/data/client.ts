@@ -14,7 +14,11 @@ const globalForMongo = globalThis as typeof globalThis & {
 
 async function connect(): Promise<Connection> {
   const config = loadConfig();
-  const client = await new MongoClient(config.mongodbUri).connect();
+  // A short server-selection timeout fails requests within seconds when MongoDB is down, instead of
+  // the driver's default 30 s.
+  const client = await new MongoClient(config.mongodbUri, {
+    serverSelectionTimeoutMS: config.serverSelectionTimeoutMs,
+  }).connect();
   return { client, db: client.db(config.mongodbDb) };
 }
 

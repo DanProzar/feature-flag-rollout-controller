@@ -4,9 +4,15 @@ import { closeDb, getDb } from "../client";
 import { TEST_MONGODB_URI } from "./harness";
 
 const DB_NAME = `feature_flags_test_${randomBytes(6).toString("hex")}`;
-const saved = { uri: process.env.MONGODB_URI, db: process.env.MONGODB_DB };
+const TIMEOUT = "MONGODB_SERVER_SELECTION_TIMEOUT_MS";
+const UNREACHABLE = "mongodb://127.0.0.1:1/";
+const saved = {
+  uri: process.env.MONGODB_URI,
+  db: process.env.MONGODB_DB,
+  timeout: process.env[TIMEOUT],
+};
 
-function restore(name: "MONGODB_URI" | "MONGODB_DB", value?: string) {
+function restore(name: string, value?: string) {
   if (value === undefined) delete process.env[name];
   else process.env[name] = value;
 }
@@ -18,6 +24,7 @@ beforeAll(() => {
 
 afterEach(async () => {
   await closeDb();
+  restore(TIMEOUT, saved.timeout);
 });
 
 afterAll(async () => {
@@ -26,6 +33,7 @@ afterAll(async () => {
   await closeDb();
   restore("MONGODB_URI", saved.uri);
   restore("MONGODB_DB", saved.db);
+  restore(TIMEOUT, saved.timeout);
 });
 
 describe("getDb", () => {
@@ -53,9 +61,19 @@ describe("getDb", () => {
     await expect(closeDb()).resolves.toBeUndefined();
   });
 
+  it("fails an unreachable server within MONGODB_SERVER_SELECTION_TIMEOUT_MS", async () => {
+    process.env.MONGODB_URI = UNREACHABLE;
+    process.env[TIMEOUT] = "300";
+    const started = Date.now();
+    await expect(getDb()).rejects.toThrow();
+    const elapsed = Date.now() - started;
+    expect(elapsed).toBeGreaterThanOrEqual(250);
+    expect(elapsed).toBeLessThan(3000);
+  });
+
   it("does not cache a failed connection", async () => {
-    process.env.MONGODB_URI =
-      "mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=200";
+    process.env.MONGODB_URI = UNREACHABLE;
+    process.env[TIMEOUT] = "200";
     await expect(getDb()).rejects.toThrow();
     process.env.MONGODB_URI = TEST_MONGODB_URI;
     const db = await getDb();
@@ -63,8 +81,8 @@ describe("getDb", () => {
   });
 
   it("closeDb during a failed connect resolves and leaves the next connection alone", async () => {
-    process.env.MONGODB_URI =
-      "mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=200";
+    process.env.MONGODB_URI = UNREACHABLE;
+    process.env[TIMEOUT] = "200";
     const failing = getDb();
     process.env.MONGODB_URI = TEST_MONGODB_URI;
     await expect(closeDb()).resolves.toBeUndefined();
