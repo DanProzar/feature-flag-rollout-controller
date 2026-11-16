@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { evaluateFlag, putFlag } from "../api-client";
+import {
+  deleteFlag,
+  evaluateFlag,
+  putFlag,
+  setUserCohorts,
+} from "../api-client";
 
 const BODY = {
   enabled: true,
@@ -23,7 +28,7 @@ function sent(fetchFn: ReturnType<typeof respond>) {
     url,
     method: init?.method,
     headers: new Headers(init?.headers),
-    body: JSON.parse(String(init?.body)),
+    body: init?.body === undefined ? undefined : JSON.parse(String(init.body)),
   };
 }
 
@@ -109,7 +114,18 @@ describe("evaluateFlag", () => {
     expect(request.url).toBe("/api/flags/demo/evaluate");
     expect(request.method).toBe("POST");
     expect(request.headers.get("content-type")).toBe("application/json");
+    expect(request.headers.get("x-user-id")).toBe("u1");
     expect(request.body).toStrictEqual({ userId: "u1", cohorts: ["a"] });
+  });
+
+  it("sends the trimmed userId as X-User-Id, and none when it is blank", async () => {
+    const trimmed = respond(200, { enabled: true, reason: "PERCENTAGE" });
+    await evaluateFlag("demo", { userId: " u1 ", cohorts: [] }, trimmed);
+    expect(sent(trimmed).headers.get("x-user-id")).toBe("u1");
+
+    const blank = respond(400, { error: "Invalid request body", issues: {} });
+    await evaluateFlag("demo", { userId: " ", cohorts: [] }, blank);
+    expect(sent(blank).headers.has("x-user-id")).toBe(false);
   });
 
   it("returns the error and issues of a 400", async () => {
@@ -134,5 +150,71 @@ describe("evaluateFlag", () => {
     expect(
       await evaluateFlag("demo", { userId: "u1", cohorts: [] }),
     ).toStrictEqual({ ok: true, enabled: false, reason: "KILL_SWITCH" });
+  });
+});
+
+describe("deleteFlag", () => {
+  it("DELETEs the flag with X-User-Id and returns it", async () => {
+    const flag = { key: "demo", ...BODY };
+    const fetchFn = respond(200, { flag });
+    expect(await deleteFlag("demo", "dev-1", fetchFn)).toStrictEqual({
+      ok: true,
+      flag,
+    });
+    const request = sent(fetchFn);
+    expect(request.url).toBe("/api/flags/demo");
+    expect(request.method).toBe("DELETE");
+    expect(request.headers.get("x-user-id")).toBe("dev-1");
+    expect(request.body).toBeUndefined();
+  });
+
+  it("sends no X-User-Id without an actor and reports a 404", async () => {
+    const fetchFn = respond(404, { error: "Flag not found" });
+    expect(await deleteFlag("demo", null, fetchFn)).toStrictEqual({
+      ok: false,
+      error: "Flag not found",
+      issues: {},
+    });
+    expect(sent(fetchFn).headers.has("x-user-id")).toBe(false);
+  });
+
+  it("uses the global fetch by default", async () => {
+    vi.stubGlobal("fetch", respond(200, { flag: { key: "demo", ...BODY } }));
+    expect((await deleteFlag("demo", null)).ok).toBe(true);
+  });
+});
+
+describe("setUserCohorts", () => {
+  const USER = { userId: "u 1", name: "Alice", cohorts: ["admin"] };
+
+  it("PUTs the cohorts and returns the user", async () => {
+    const fetchFn = respond(200, { user: USER });
+    expect(await setUserCohorts("u 1", ["admin"], fetchFn)).toStrictEqual({
+      ok: true,
+      user: USER,
+    });
+    const request = sent(fetchFn);
+    expect(request.url).toBe("/api/users/u%201/cohorts");
+    expect(request.method).toBe("PUT");
+    expect(request.headers.get("content-type")).toBe("application/json");
+    expect(request.headers.has("x-user-id")).toBe(false);
+    expect(request.body).toStrictEqual({ cohorts: ["admin"] });
+  });
+
+  it("returns the error and issues of a 400", async () => {
+    const fetchFn = respond(400, {
+      error: "Invalid request body",
+      issues: { cohorts: ["Too small"] },
+    });
+    expect(await setUserCohorts("u1", [""], fetchFn)).toStrictEqual({
+      ok: false,
+      error: "Invalid request body",
+      issues: { cohorts: ["Too small"] },
+    });
+  });
+
+  it("uses the global fetch by default", async () => {
+    vi.stubGlobal("fetch", respond(200, { user: USER }));
+    expect((await setUserCohorts("u1", [])).ok).toBe(true);
   });
 });

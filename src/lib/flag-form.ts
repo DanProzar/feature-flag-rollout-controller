@@ -28,12 +28,18 @@ const FIELDS: readonly FlagFormField[] = [
   "sticky",
 ];
 
-/** A new flag: live, 0%, non-sticky, no cohorts. */
+/**
+ * The catalogue's cohort of regular customers. Including it in a new flag marks a gradual rollout,
+ * so the create form drops the percentage to 0% (see `withIncludeCohorts`).
+ */
+export const USER_COHORT = "user";
+
+/** A new flag: live, 100%, non-sticky, no cohorts. */
 export function emptyFlagForm(): FlagFormValues {
   return {
     key: "",
     enabled: true,
-    percentage: 0,
+    percentage: 100,
     includeCohorts: [],
     excludeCohorts: [],
     sticky: false,
@@ -46,6 +52,20 @@ export function flagToForm(flag: Flag): FlagFormValues {
     includeCohorts: [...flag.includeCohorts],
     excludeCohorts: [...flag.excludeCohorts],
   };
+}
+
+/**
+ * `values` with new include cohorts, as the create form applies them: adding `USER_COHORT` sets the
+ * percentage to 0 (to roll out gradually from there), removing it sets 100; other changes keep it.
+ */
+export function withIncludeCohorts(
+  values: FlagFormValues,
+  includeCohorts: string[],
+): FlagFormValues {
+  const had = values.includeCohorts.includes(USER_COHORT);
+  const has = includeCohorts.includes(USER_COHORT);
+  const percentage = had === has ? values.percentage : has ? 0 : 100;
+  return { ...values, includeCohorts, percentage };
 }
 
 /** The PUT body for the form; the key goes in the URL. */

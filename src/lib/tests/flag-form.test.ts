@@ -6,7 +6,9 @@ import {
   flagToForm,
   formToPutBody,
   issuesToFieldErrors,
+  USER_COHORT,
   validateFlagForm,
+  withIncludeCohorts,
 } from "../flag-form";
 
 const FLAG: Flag = {
@@ -23,11 +25,11 @@ function values(overrides: Partial<FlagFormValues> = {}): FlagFormValues {
 }
 
 describe("emptyFlagForm", () => {
-  it("defaults to a live, 0%, non-sticky flag with no key or cohorts", () => {
+  it("defaults to a live, 100%, non-sticky flag with no key or cohorts", () => {
     expect(emptyFlagForm()).toStrictEqual({
       key: "",
       enabled: true,
-      percentage: 0,
+      percentage: 100,
       includeCohorts: [],
       excludeCohorts: [],
       sticky: false,
@@ -136,5 +138,43 @@ describe("issuesToFieldErrors", () => {
 
   it("maps an empty issues object to no errors", () => {
     expect(issuesToFieldErrors({})).toStrictEqual({});
+  });
+});
+
+describe("withIncludeCohorts", () => {
+  it("sets 0% when the user cohort is added", () => {
+    expect(
+      withIncludeCohorts(values({ percentage: 100, includeCohorts: [] }), [
+        "tester",
+        USER_COHORT,
+      ]),
+    ).toStrictEqual(
+      values({ percentage: 0, includeCohorts: ["tester", USER_COHORT] }),
+    );
+  });
+
+  it("sets 100% when the user cohort is removed", () => {
+    expect(
+      withIncludeCohorts(
+        values({ percentage: 30, includeCohorts: [USER_COHORT, "tester"] }),
+        ["tester"],
+      ),
+    ).toStrictEqual(values({ percentage: 100, includeCohorts: ["tester"] }));
+  });
+
+  it("keeps the percentage when the user cohort stays in or out", () => {
+    expect(
+      withIncludeCohorts(values({ percentage: 30, includeCohorts: [] }), [
+        "tester",
+      ]),
+    ).toStrictEqual(values({ percentage: 30, includeCohorts: ["tester"] }));
+    expect(
+      withIncludeCohorts(
+        values({ percentage: 30, includeCohorts: [USER_COHORT] }),
+        [USER_COHORT, "admin"],
+      ),
+    ).toStrictEqual(
+      values({ percentage: 30, includeCohorts: [USER_COHORT, "admin"] }),
+    );
   });
 });

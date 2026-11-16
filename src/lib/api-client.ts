@@ -1,4 +1,5 @@
 import type { EvaluationContext, Flag, Reason } from "../domain";
+import type { User } from "../server";
 import type { PutFlagBody } from "../server/schemas";
 
 // Browser calls to the HTTP API. They never throw: every outcome is a result, so components only
@@ -12,6 +13,10 @@ export interface ApiFailure {
 }
 
 export type PutFlagResult = { ok: true; flag: Flag } | ApiFailure;
+
+export type DeleteFlagResult = { ok: true; flag: Flag } | ApiFailure;
+
+export type SetUserCohortsResult = { ok: true; user: User } | ApiFailure;
 
 export type EvaluateFlagResult =
   { ok: true; enabled: boolean; reason: Reason } | ApiFailure;
@@ -47,6 +52,15 @@ function flagUrl(key: string): string {
   return `/api/flags/${encodeURIComponent(key)}`;
 }
 
+/** JSON headers, plus `X-User-Id` when `userId` is set. */
+function headers(userId: string | null): Record<string, string> {
+  const result: Record<string, string> = {
+    "content-type": "application/json",
+  };
+  if (userId) result["x-user-id"] = userId;
+  return result;
+}
+
 /** `PUT /api/flags/:key`, sending `X-User-Id` only when there is an actor. */
 export async function putFlag(
   key: string,
@@ -54,19 +68,50 @@ export async function putFlag(
   actorId: string | null,
   fetchFn: typeof fetch = globalFetch,
 ): Promise<PutFlagResult> {
-  const headers: Record<string, string> = {
-    "content-type": "application/json",
-  };
-  if (actorId) headers["x-user-id"] = actorId;
   const result = await request<{ flag: Flag }>(
     flagUrl(key),
-    { method: "PUT", headers, body: JSON.stringify(body) },
+    { method: "PUT", headers: headers(actorId), body: JSON.stringify(body) },
     fetchFn,
   );
   return result.ok ? { ok: true, flag: result.body.flag } : result;
 }
 
-/** `POST /api/flags/:key/evaluate`, exactly as a client application would call it. */
+/** `DELETE /api/flags/:key`, sending `X-User-Id` only when there is an actor. */
+export async function deleteFlag(
+  key: string,
+  actorId: string | null,
+  fetchFn: typeof fetch = globalFetch,
+): Promise<DeleteFlagResult> {
+  const result = await request<{ flag: Flag }>(
+    flagUrl(key),
+    { method: "DELETE", headers: headers(actorId) },
+    fetchFn,
+  );
+  return result.ok ? { ok: true, flag: result.body.flag } : result;
+}
+
+/** `PUT /api/users/:userId/cohorts`: replaces the user's cohorts. */
+export async function setUserCohorts(
+  userId: string,
+  cohorts: string[],
+  fetchFn: typeof fetch = globalFetch,
+): Promise<SetUserCohortsResult> {
+  const result = await request<{ user: User }>(
+    `/api/users/${encodeURIComponent(userId)}/cohorts`,
+    {
+      method: "PUT",
+      headers: headers(null),
+      body: JSON.stringify({ cohorts }),
+    },
+    fetchFn,
+  );
+  return result.ok ? { ok: true, user: result.body.user } : result;
+}
+
+/**
+ * `POST /api/flags/:key/evaluate`, exactly as a client application would call it: on behalf of the
+ * user, so `X-User-Id` carries the evaluated `userId`.
+ */
 export async function evaluateFlag(
   key: string,
   ctx: EvaluationContext,
@@ -76,7 +121,7 @@ export async function evaluateFlag(
     `${flagUrl(key)}/evaluate`,
     {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: headers(ctx.userId.trim() || null),
       body: JSON.stringify(ctx),
     },
     fetchFn,
