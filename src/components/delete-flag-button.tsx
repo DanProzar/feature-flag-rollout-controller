@@ -3,7 +3,9 @@
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { ErrorAlert } from "@/components/error-alert";
 import { PendingContent } from "@/components/pending-button";
+import { showSuccessToast } from "@/components/success-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { deleteFlag } from "@/lib/api-client";
+import { flagDeletedToast } from "@/lib/toast-messages";
 
 /** A trash-bin button that deletes the flag after a confirmation, then refreshes the page. */
 export function DeleteFlagButton({ flagKey }: { flagKey: string }) {
@@ -35,6 +38,7 @@ export function DeleteFlagButton({ flagKey }: { flagKey: string }) {
       setFailure(result.error);
       return;
     }
+    showSuccessToast(flagDeletedToast(flagKey));
     startRefresh(() => {
       setConfirming(false);
       router.refresh();
@@ -70,9 +74,10 @@ export function DeleteFlagButton({ flagKey }: { flagKey: string }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           {failure && (
-            <p role="alert" className="text-sm text-destructive">
-              Delete failed: {failure}
-            </p>
+            <ErrorAlert
+              title={`Could not delete ${flagKey}`}
+              description={failure}
+            />
           )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>

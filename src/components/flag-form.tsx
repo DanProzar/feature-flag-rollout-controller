@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState, useTransition } from "react";
 import { type CohortOption, CohortEditor } from "@/components/cohort-editor";
+import { ErrorAlert } from "@/components/error-alert";
 import { PendingButton } from "@/components/pending-button";
+import { showSuccessToast } from "@/components/success-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -18,6 +20,7 @@ import {
   validateFlagForm,
   withIncludeCohorts,
 } from "@/lib/flag-form";
+import { flagSavedToast } from "@/lib/toast-messages";
 
 /**
  * Creates or edits a flag through `PUT /api/flags/:key`. On edit the key is read-only and the kill
@@ -65,9 +68,12 @@ export function FlagForm({
     setSaving(false);
     if (!result.ok) {
       setErrors(issuesToFieldErrors(result.issues));
-      setFailure(`Save failed: ${result.error}`);
+      setFailure(result.error);
       return;
     }
+    showSuccessToast(
+      flagSavedToast(mode === "create" ? null : initial, result.flag),
+    );
     startNavigation(() => {
       if (mode === "create") router.push("/");
       else router.refresh();
@@ -175,16 +181,20 @@ export function FlagForm({
         onChange={(checked) => set("sticky", checked)}
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <PendingButton type="submit" pending={saving || navigating}>
-          {mode === "create" ? "Create flag" : "Save"}
-        </PendingButton>
-        {failure && (
-          <p role="alert" className="text-sm text-destructive">
-            {failure}
-          </p>
-        )}
-      </div>
+      {failure && (
+        <ErrorAlert
+          title={
+            mode === "create"
+              ? "Could not create flag"
+              : `Could not save ${values.key}`
+          }
+          description={failure}
+        />
+      )}
+
+      <PendingButton type="submit" pending={saving || navigating}>
+        {mode === "create" ? "Create flag" : "Save"}
+      </PendingButton>
     </form>
   );
 }

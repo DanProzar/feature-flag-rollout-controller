@@ -3,9 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { type CohortOption, CohortEditor } from "@/components/cohort-editor";
+import { ErrorAlert } from "@/components/error-alert";
 import { PendingButton } from "@/components/pending-button";
+import { showSuccessToast } from "@/components/success-toast";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { setUserCohorts } from "@/lib/api-client";
+import { userCohortsToast } from "@/lib/toast-messages";
 
 export interface UserRowData {
   userId: string;
@@ -37,9 +40,12 @@ export function UserCohortsRow({
     const result = await setUserCohorts(user.userId, value);
     setSaving(false);
     if (!result.ok) {
-      setFailure(`Save failed: ${result.error}`);
+      setFailure(result.error);
       return;
     }
+    showSuccessToast(
+      userCohortsToast(user.name, user.cohorts, result.user.cohorts),
+    );
     startRefresh(() => router.refresh());
   }
 
@@ -52,7 +58,7 @@ export function UserCohortsRow({
         {user.userId}
       </TableCell>
       <TableCell className="whitespace-normal">
-        <div className="space-y-1">
+        <div className="space-y-2">
           <CohortEditor
             id={inputId}
             value={value}
@@ -61,9 +67,10 @@ export function UserCohortsRow({
             disabled={saving || refreshing}
           />
           {failure && (
-            <p role="alert" className="text-sm text-destructive">
-              {failure}
-            </p>
+            <ErrorAlert
+              title={`Could not save cohorts for ${user.name}`}
+              description={failure}
+            />
           )}
         </div>
       </TableCell>

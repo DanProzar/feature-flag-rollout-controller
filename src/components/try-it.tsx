@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { type CohortOption, CohortEditor } from "@/components/cohort-editor";
+import { ErrorAlert } from "@/components/error-alert";
 import { PendingButton } from "@/components/pending-button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -152,12 +153,10 @@ export function TryIt({
                 <span className="font-mono text-sm">{result.reason}</span>
               </div>
             )}
-            {result && !result.ok && (
-              <p role="alert" className="text-sm text-destructive">
-                Evaluation failed: {result.error}
-              </p>
-            )}
           </div>
+          {result && !result.ok && (
+            <ErrorAlert title="Evaluation failed" description={result.error} />
+          )}
         </form>
       </CardContent>
     </Card>

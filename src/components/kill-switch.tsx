@@ -12,16 +12,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { usePageAlert } from "@/components/page-alert";
 import { PendingContent } from "@/components/pending-button";
+import { showSuccessToast } from "@/components/success-toast";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import type { Flag } from "@/domain";
 import { putFlag } from "@/lib/api-client";
 import { formToPutBody } from "@/lib/flag-form";
+import { killSwitchToast } from "@/lib/toast-messages";
 
 /**
  * The flag's kill switch: on = live, off = killed. Killing asks for confirmation; going live again
- * applies at once. Either way the whole current flag is PUT with only `enabled` changed.
+ * applies at once. Either way the whole current flag is PUT with only `enabled` changed. A failure
+ * closes the dialog and shows the page-level Alert, as rows and headers have no room for one.
  */
 export function KillSwitch({
   flag,
@@ -33,12 +37,12 @@ export function KillSwitch({
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
+  const pageAlert = usePageAlert();
   const id = `kill-switch-${flag.key}`;
 
   async function save(enabled: boolean) {
     setPending(true);
-    setFailure(null);
+    pageAlert.clear();
     const result = await putFlag(
       flag.key,
       formToPutBody({ ...flag, enabled }),
@@ -47,14 +51,20 @@ export function KillSwitch({
     setPending(false);
     setConfirming(false);
     if (!result.ok) {
-      setFailure(result.error);
+      pageAlert.show({
+        title: enabled
+          ? `Could not turn ${flag.key} back on`
+          : `Could not kill ${flag.key}`,
+        description: result.error,
+      });
       return;
     }
+    showSuccessToast(killSwitchToast(flag.key, enabled));
     router.refresh();
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <>
       <div className="flex items-center gap-2">
         <Switch
           id={id}
@@ -70,11 +80,6 @@ export function KillSwitch({
           <Label htmlFor={id}>{flag.enabled ? "Live" : "Killed"}</Label>
         )}
       </div>
-      {failure && (
-        <p role="alert" className="text-xs text-destructive">
-          {failure}
-        </p>
-      )}
 
       <AlertDialog open={confirming} onOpenChange={setConfirming}>
         <AlertDialogContent>
@@ -101,6 +106,6 @@ export function KillSwitch({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
