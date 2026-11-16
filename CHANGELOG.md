@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-11-16
+
+- Added the admin UI on shadcn/ui: a flags list with kill state, rollout, sticky and cohort badges, where clicking a row opens the flag
+- Added create and edit flag forms with a percentage slider, sticky switch and click-to-add cohort pickers that accept free-text cohorts; new flags default to 100% and switch to 0% while the `user` cohort is included
+- Added a kill switch on the list and detail pages that asks for confirmation only when killing a flag
+- Added flag deletion from the list via `DELETE /api/flags/:key`, which also clears the flag's sticky assignments and is recorded in its history
+- Added a Users page for editing each user's cohorts via `PUT /api/users/:userId/cohorts`
+- Added a Try it panel that evaluates a flag for a seeded user (cohorts shown per option, user id sent as `X-User-Id`) and shows the result in green or red with its reason
+- Added a per-flag history showing who changed which fields, with before → after values
+- Added loading spinners to buttons that keep the button's width while saving or evaluating
+- Added flag list/get and a catalog service for server-side page reads, and unit-tested UI helpers under the 100% coverage gate
+- Added Phase 4 admin UI spec, documented the UI and new endpoints, and marked Phase 4 complete
+
 ## 2026-11-15
 
 - Added the HTTP API as Next.js Route Handlers (`NextRequest`/`NextResponse`, typed `RouteContext`): `PUT /api/flags/:key`, `POST /api/flags/:key/evaluate` and `GET /api/flags/:key/audit`, with Zod-validated keys and bodies and `{ error, issues }` 400 responses
