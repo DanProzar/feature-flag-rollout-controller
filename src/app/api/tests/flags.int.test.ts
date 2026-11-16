@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { audit, evaluate, put, useApi } from "./helpers";
+import { audit, del, evaluate, put, useApi } from "./helpers";
 
 const t = useApi();
 
@@ -115,6 +115,41 @@ describe("POST /api/flags/:key/evaluate", () => {
       status: 200,
       body: { enabled: false, reason: "FLAG_NOT_FOUND" },
     });
+  });
+});
+
+describe("DELETE /api/flags/:key", () => {
+  it("answers 200 { flag }, removes it with its assignments and audits it", async () => {
+    await put("demo", BODY);
+    await evaluate("demo", { userId: "u1" });
+    expect(await t.db.collection("assignments").countDocuments()).toBe(1);
+
+    expect(await del("demo", { "X-User-Id": "dev-1" })).toEqual({
+      status: 200,
+      body: { flag: { key: "demo", ...BODY } },
+    });
+    expect(await t.db.collection("flags").countDocuments()).toBe(0);
+    expect(await t.db.collection("assignments").countDocuments()).toBe(0);
+    const { entries } = (await audit("demo")).body;
+    expect(entries.at(-1)).toMatchObject({
+      actorId: "dev-1",
+      before: { key: "demo", ...BODY },
+      after: null,
+    });
+  });
+
+  it("answers 404 for an unknown flag without auditing", async () => {
+    expect(await del("nope")).toEqual({
+      status: 404,
+      body: { error: "Flag not found" },
+    });
+    await nothingStored();
+  });
+
+  it("answers 400 for an invalid key", async () => {
+    const res = await del("Bad Key");
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Invalid flag key");
   });
 });
 

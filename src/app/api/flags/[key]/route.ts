@@ -20,3 +20,16 @@ export const PUT = handle(
     return NextResponse.json({ flag });
   },
 );
+
+/** Deletes the flag `key` and its sticky assignments (audited); 404 when there is no such flag. */
+export const DELETE = handle(
+  async (request: NextRequest, ctx: RouteContext<"/api/flags/[key]">) => {
+    const key = parseKey((await ctx.params).key);
+    const { flags } = await getServices();
+    const flag = await flags.delete(key, actorIdFrom(request));
+    if (!flag) {
+      return NextResponse.json({ error: "Flag not found" }, { status: 404 });
+    }
+    return NextResponse.json({ flag });
+  },
+);

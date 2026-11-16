@@ -14,8 +14,17 @@ export interface Evaluation {
 }
 
 export interface FlagService {
+  /** The flag `key`, or `null` if there is none. */
+  get(key: string): Promise<Flag | null>;
+  /** Every flag, sorted by key. */
+  list(): Promise<Flag[]>;
   /** Creates or fully replaces the flag `key` and appends one audit entry; returns the new flag. */
   put(key: string, body: PutFlagBody, actorId: string | null): Promise<Flag>;
+  /**
+   * Deletes the flag `key` with its sticky assignments and appends one audit entry (`after: null`);
+   * returns the deleted flag, or `null` (nothing written) when there is none.
+   */
+  delete(key: string, actorId: string | null): Promise<Flag | null>;
   /**
    * Evaluates the flag `key` for a user, reading the sticky assignment only for sticky flags and
    * storing the first percentage result of a sticky flag.
@@ -39,12 +48,35 @@ export function createFlagService({
   clock,
 }: FlagServiceDeps): FlagService {
   return {
+    get(key) {
+      return flags.get(key);
+    },
+
+    list() {
+      return flags.list();
+    },
+
     async put(key, body, actorId) {
       const after: Flag = { key, ...body };
       const before = await flags.upsert(after);
       // Every PUT is audited, even when nothing changed.
       await audit.append({ at: clock.now(), key, actorId, before, after });
       return after;
+    },
+
+    async delete(key, actorId) {
+      const before = await flags.delete(key);
+      if (!before) return null;
+      // A flag re-created under this key must not inherit the old flag's sticky results.
+      await assignments.deleteByFlag(key);
+      await audit.append({
+        at: clock.now(),
+        key,
+        actorId,
+        before,
+        after: null,
+      });
+      return before;
     },
 
     async evaluate(key, { userId, cohorts }) {

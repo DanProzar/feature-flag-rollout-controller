@@ -1,3 +1,6 @@
+export type { AuditEntry, User } from "../data";
+export type { CatalogService } from "./catalog";
+export { createCatalogService } from "./catalog";
 export { appClock, freezeClock, unfreezeClock } from "./clock";
 export { testEndpointsEnabled } from "./config";
 export type { Services } from "./container";
@@ -17,10 +20,16 @@ export {
 } from "./http";
 export type { ResetService } from "./reset";
 export { createResetService } from "./reset";
-export type { EvaluateBody, PutFlagBody, ResetBody } from "./schemas";
+export type {
+  EvaluateBody,
+  PutFlagBody,
+  ResetBody,
+  UserCohortsBody,
+} from "./schemas";
 export {
   EvaluateBodySchema,
   FlagKeySchema,
   PutFlagBodySchema,
   ResetBodySchema,
+  UserCohortsBodySchema,
 } from "./schemas";

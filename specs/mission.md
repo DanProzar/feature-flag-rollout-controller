@@ -64,7 +64,8 @@ Notes:
 
 ## Audit trail
 
-Every flag upsert appends an audit entry `{ at, key, actorId, before, after }`. `actorId` comes
+Every flag upsert or delete appends an audit entry `{ at, key, actorId, before, after }` (`before`
+is `null` on create, `after` is `null` on delete). `actorId` comes
 from the optional `X-User-Id` request header and is `null` when the header is absent. The log is
 append-only, readable per flag, and survives the test reset.
 

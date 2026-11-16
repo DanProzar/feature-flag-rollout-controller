@@ -51,6 +51,16 @@ describe("audit repository", () => {
     ]);
   });
 
+  it("round-trips a deletion entry with after: null", async () => {
+    const audit = createAuditRepository(t.db);
+    const deleted = entry("2026-01-01T00:00:00.000Z", {
+      before: flag(),
+      after: null,
+    });
+    await audit.append(deleted);
+    expect(await audit.listByKey("new-checkout")).toStrictEqual([deleted]);
+  });
+
   it("does not modify the caller's entry", async () => {
     const e = entry("2026-01-01T00:00:00.000Z");
     await createAuditRepository(t.db).append(e);

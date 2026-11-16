@@ -61,11 +61,13 @@ src/data/
 
 ```
 src/server/
-  schemas.ts      # FlagKeySchema, PutFlagBodySchema, EvaluateBodySchema, ResetBodySchema (Zod)
+  schemas.ts      # FlagKeySchema, PutFlagBodySchema, EvaluateBodySchema, UserCohortsBodySchema,
+                  # ResetBodySchema (Zod)
   http.ts         # BadRequestError, handle, parseJson, parseKey, actorIdFrom
   clock.ts        # appClock, freezeClock, unfreezeClock (delegate on globalThis)
   config.ts       # testEndpointsEnabled(env)
-  flags.ts        # createFlagService: put, evaluate, audit
+  flags.ts        # createFlagService: get, list, put, delete, evaluate, audit
+  catalog.ts      # createCatalogService: cohorts, users, setUserCohorts
   reset.ts        # createResetService: reset(now)
   container.ts    # createServices, getServices, setServicesForTesting
   index.ts        # public API
@@ -135,8 +137,10 @@ not validated against it)
 | Method & path | Body | Response |
 |---------------|------|----------|
 | `PUT /api/flags/:key` | all flag fields (`enabled`, `percentage`, `includeCohorts`, `excludeCohorts`, `sticky`) | `200 { flag }` |
+| `DELETE /api/flags/:key` | — | `200 { flag }` (the deleted flag); `404 { error }` if there is none |
 | `POST /api/flags/:key/evaluate` | `{ userId, cohorts? }` | `200 { enabled: boolean, reason }` |
 | `GET /api/flags/:key/audit` | — | `200 { entries }`, oldest first |
+| `PUT /api/users/:userId/cohorts` | `{ cohorts }` (required) | `200 { user }`; `404 { error }` for an unknown user |
 | `POST /api/test/reset` | `{ now }` (required) | `200 { now }`; clears flags and sticky assignments (audit is kept) |
 
 ### Request validation
@@ -158,7 +162,18 @@ not validated against it)
   `before` = `null` when the flag didn't exist.
 - The kill switch is a PUT with `enabled: false`; there's no separate endpoint.
 
+### `DELETE /api/flags/:key`
+- Removes the flag and every sticky assignment for it (a flag re-created under the key starts
+  fresh), and appends one audit entry with `after: null`; `actorId` from `X-User-Id` as for PUT.
+- An unknown flag answers `404 { error: "Flag not found" }` and writes nothing.
+
+### `PUT /api/users/:userId/cohorts`
+- Replaces only the user's `cohorts` (trimmed, de-duplicated); used by the admin Users page. Users
+  are not created or renamed through the API.
+
 ### `POST /api/flags/:key/evaluate`
+- Clients send the evaluated user's id as `X-User-Id` too (the admin "Try it" panel does); the
+  endpoint reads `userId` from the body.
 - `cohorts` is optional and defaults to `[]`.
 - Runs the rules in `mission.md`; `reason` is one of `FLAG_NOT_FOUND`, `KILL_SWITCH`,
   `COHORT_EXCLUDED`, `COHORT_INCLUDED`, `STICKY`, `PERCENTAGE`.

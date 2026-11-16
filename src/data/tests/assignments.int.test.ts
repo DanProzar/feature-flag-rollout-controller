@@ -68,6 +68,17 @@ describe("assignments repository", () => {
     expect(await assignments.get("b", "u2")).toBeUndefined();
   });
 
+  it("deletes every user's value for one flag only", async () => {
+    const assignments = createAssignmentsRepository(t.db, frozenClock(T1));
+    await assignments.insertIfAbsent("a", "u1", true);
+    await assignments.insertIfAbsent("a", "u2", false);
+    await assignments.insertIfAbsent("b", "u1", true);
+    await assignments.deleteByFlag("a");
+    expect(await assignments.get("a", "u1")).toBeUndefined();
+    expect(await assignments.get("a", "u2")).toBeUndefined();
+    expect(await assignments.get("b", "u1")).toBe(true);
+  });
+
   it("throws when a stored document is malformed", async () => {
     await t.db
       .collection("assignments")

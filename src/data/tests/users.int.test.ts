@@ -85,6 +85,24 @@ describe("users repository", () => {
     expect(await t.db.collection("users").countDocuments()).toBe(0);
   });
 
+  it("sets only the cohorts, returning the user", async () => {
+    const users = createUsersRepository(t.db);
+    const alice = await users.create({ name: "Alice", cohorts: ["admin"] });
+    const updated = { ...alice, cohorts: ["tester", "user"] };
+    expect(
+      await users.setCohorts(alice.userId, ["tester", "user"]),
+    ).toStrictEqual(updated);
+    expect(await users.get(alice.userId)).toStrictEqual(updated);
+  });
+
+  it("returns null when setting cohorts of an unknown user, without creating it", async () => {
+    const users = createUsersRepository(t.db);
+    expect(
+      await users.setCohorts("01a1dc80-f000-7ca2-9842-a25ac04f528a", ["x"]),
+    ).toBeNull();
+    expect(await t.db.collection("users").countDocuments()).toBe(0);
+  });
+
   it("deletes a user", async () => {
     const users = createUsersRepository(t.db);
     const alice = await users.create({ name: "Alice", cohorts: [] });

@@ -2,11 +2,14 @@ import type { Db } from "mongodb";
 import {
   createAssignmentsRepository,
   createAuditRepository,
+  createCohortsRepository,
   createFlagsRepository,
+  createUsersRepository,
   ensureIndexes,
   getDb,
 } from "../data";
 import type { Clock } from "../domain";
+import { type CatalogService, createCatalogService } from "./catalog";
 import { appClock, freezeClock } from "./clock";
 import { createFlagService, type FlagService } from "./flags";
 import { createResetService, type ResetService } from "./reset";
@@ -14,6 +17,7 @@ import { createResetService, type ResetService } from "./reset";
 export interface Services {
   flags: FlagService;
   reset: ResetService;
+  catalog: CatalogService;
 }
 
 export function createServices(db: Db, clock: Clock): Services {
@@ -25,6 +29,10 @@ export function createServices(db: Db, clock: Clock): Services {
       clock,
     }),
     reset: createResetService({ db, freezeClock }),
+    catalog: createCatalogService({
+      users: createUsersRepository(db),
+      cohorts: createCohortsRepository(db),
+    }),
   };
 }
 

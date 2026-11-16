@@ -117,6 +117,52 @@ describe("flag service audit", () => {
   });
 });
 
+describe("flag service delete", () => {
+  it("deletes the flag and its assignments and audits it with after: null", async () => {
+    const flags = service();
+    const flag = await flags.put("demo", BODY, null);
+    await flags.put("other", BODY, null);
+    const assignments = createAssignmentsRepository(t.db, clock);
+    await assignments.insertIfAbsent("demo", "u1", true);
+    await assignments.insertIfAbsent("other", "u1", true);
+
+    expect(await flags.delete("demo", "dev-1")).toStrictEqual(flag);
+    expect(await flags.get("demo")).toBeNull();
+    expect(await assignments.get("demo", "u1")).toBeUndefined();
+    expect(await assignments.get("other", "u1")).toBe(true);
+    const entries = await flags.audit("demo");
+    expect(entries.at(-1)).toStrictEqual({
+      at: new Date(T1),
+      key: "demo",
+      actorId: "dev-1",
+      before: flag,
+      after: null,
+    });
+  });
+
+  it("returns null for an unknown key without writing", async () => {
+    expect(await service().delete("missing", null)).toBeNull();
+    expect(await t.db.collection("audit").countDocuments()).toBe(0);
+  });
+});
+
+describe("flag service reads", () => {
+  it("gets a flag, or null for an unknown key", async () => {
+    const flags = service();
+    const flag = await flags.put("demo", BODY, null);
+    expect(await flags.get("demo")).toStrictEqual(flag);
+    expect(await flags.get("missing")).toBeNull();
+  });
+
+  it("lists every flag sorted by key", async () => {
+    const flags = service();
+    expect(await flags.list()).toEqual([]);
+    const b = await flags.put("b-flag", BODY, null);
+    const a = await flags.put("a-flag", { ...BODY, sticky: false }, null);
+    expect(await flags.list()).toStrictEqual([a, b]);
+  });
+});
+
 describe("flag service evaluate", () => {
   const USER = { userId: "u1", cohorts: [] };
   const storedValue = () =>
@@ -137,6 +183,7 @@ describe("flag service evaluate", () => {
     const spy = {
       get: vi.fn(real.get),
       insertIfAbsent: vi.fn(real.insertIfAbsent),
+      deleteByFlag: vi.fn(real.deleteByFlag),
     };
     const flags = service(spy);
     const flag = await flags.put("demo", { ...BODY, sticky: false }, null);
@@ -196,6 +243,7 @@ describe("flag service evaluate", () => {
         return value;
       },
       insertIfAbsent: real.insertIfAbsent,
+      deleteByFlag: real.deleteByFlag,
     };
     expect(await service(racing).evaluate("demo", USER)).toStrictEqual({
       enabled: opposite,
