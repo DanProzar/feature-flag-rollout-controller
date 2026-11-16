@@ -15,6 +15,8 @@ export interface AssignmentsRepository {
     userId: string,
     value: boolean,
   ): Promise<boolean>;
+  /** Removes every user's stored value for the flag. */
+  deleteByFlag(flagKey: string): Promise<void>;
 }
 
 export function createAssignmentsRepository(
@@ -44,6 +46,10 @@ export function createAssignmentsRepository(
         const doc = await assignments.findOne({ flagKey, userId });
         return AssignmentDocumentSchema.parse(doc).value;
       }
+    },
+
+    async deleteByFlag(flagKey) {
+      await assignments.deleteMany({ flagKey });
     },
   };
 }

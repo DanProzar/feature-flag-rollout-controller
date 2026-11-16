@@ -108,6 +108,18 @@ describe("flags repository", () => {
     ]);
   });
 
+  it("deletes a flag, returning it, and null when there is none", async () => {
+    const flags = createFlagsRepository(t.db, frozenClock(T1));
+    await flags.upsert(flag({ percentage: 5 }));
+    await flags.upsert(flag({ key: "other" }));
+    expect(await flags.delete("new-checkout")).toStrictEqual(
+      flag({ percentage: 5 }),
+    );
+    expect(await flags.get("new-checkout")).toBeNull();
+    expect(await flags.delete("new-checkout")).toBeNull();
+    expect(await flags.list()).toStrictEqual([flag({ key: "other" })]);
+  });
+
   it("throws when a stored document is malformed", async () => {
     await t.db
       .collection("flags")

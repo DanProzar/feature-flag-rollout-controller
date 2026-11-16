@@ -12,6 +12,8 @@ export interface UsersRepository {
   create(user: NewUser): Promise<User>;
   /** Replaces `name` and `cohorts`; `null` when there is no such user (never creates one). */
   update(user: User): Promise<User | null>;
+  /** Replaces only `cohorts`; `null` when there is no such user (never creates one). */
+  setCohorts(userId: string, cohorts: string[]): Promise<User | null>;
   /** `true` if a user was removed. */
   delete(userId: string): Promise<boolean>;
   clear(): Promise<void>;
@@ -41,6 +43,15 @@ export function createUsersRepository(db: Db): UsersRepository {
       const doc = await users.findOneAndUpdate(
         { userId },
         { $set: { name, cohorts } },
+        { returnDocument: "after" },
+      );
+      return doc && UserSchema.parse(doc);
+    },
+
+    async setCohorts(userId, cohorts) {
+      const doc = await users.findOneAndUpdate(
+        { userId },
+        { $set: { cohorts } },
         { returnDocument: "after" },
       );
       return doc && UserSchema.parse(doc);

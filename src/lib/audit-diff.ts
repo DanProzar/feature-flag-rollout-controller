@@ -7,7 +7,8 @@ export interface FieldChange {
   field: FlagField;
   /** `undefined` when the entry created the flag. */
   before: Flag[FlagField] | undefined;
-  after: Flag[FlagField];
+  /** `undefined` when the entry deleted the flag. */
+  after: Flag[FlagField] | undefined;
 }
 
 const FIELDS: readonly FlagField[] = [
@@ -26,13 +27,17 @@ function same(a: Flag[FlagField], b: Flag[FlagField]): boolean {
 }
 
 /**
- * The fields an audit entry changed, in form order. A created flag (`before === null`) lists every
- * field; an unchanged PUT gives `[]`.
+ * The fields an audit entry changed, in form order. A created (`before === null`) or deleted
+ * (`after === null`) flag lists every field; an unchanged PUT gives `[]`.
  */
-export function diffFlags(before: Flag | null, after: Flag): FieldChange[] {
+export function diffFlags(
+  before: Flag | null,
+  after: Flag | null,
+): FieldChange[] {
   return FIELDS.filter(
-    (field) => before === null || !same(before[field], after[field]),
-  ).map((field) => ({ field, before: before?.[field], after: after[field] }));
+    (field) =>
+      before === null || after === null || !same(before[field], after[field]),
+  ).map((field) => ({ field, before: before?.[field], after: after?.[field] }));
 }
 
 /** A field value as shown in the audit history. */

@@ -1,11 +1,13 @@
 import type { Cohort, CohortsRepository, User, UsersRepository } from "../data";
 
-/** Read-only access to the cohort and user catalogues, for UIs. */
+/** The cohort and user catalogues, for UIs; only users' cohorts can be changed. */
 export interface CatalogService {
   /** Every cohort, sorted by key. */
   cohorts(): Promise<Cohort[]>;
   /** Every user, in creation order. */
   users(): Promise<User[]>;
+  /** Replaces the user's cohorts; `null` when there is no such user. */
+  setUserCohorts(userId: string, cohorts: string[]): Promise<User | null>;
 }
 
 export interface CatalogServiceDeps {
@@ -24,6 +26,10 @@ export function createCatalogService({
 
     users() {
       return users.list();
+    },
+
+    setUserCohorts(userId, cohorts) {
+      return users.setCohorts(userId, cohorts);
     },
   };
 }

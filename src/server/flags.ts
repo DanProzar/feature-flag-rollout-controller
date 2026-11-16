@@ -21,6 +21,11 @@ export interface FlagService {
   /** Creates or fully replaces the flag `key` and appends one audit entry; returns the new flag. */
   put(key: string, body: PutFlagBody, actorId: string | null): Promise<Flag>;
   /**
+   * Deletes the flag `key` with its sticky assignments and appends one audit entry (`after: null`);
+   * returns the deleted flag, or `null` (nothing written) when there is none.
+   */
+  delete(key: string, actorId: string | null): Promise<Flag | null>;
+  /**
    * Evaluates the flag `key` for a user, reading the sticky assignment only for sticky flags and
    * storing the first percentage result of a sticky flag.
    */
@@ -57,6 +62,21 @@ export function createFlagService({
       // Every PUT is audited, even when nothing changed.
       await audit.append({ at: clock.now(), key, actorId, before, after });
       return after;
+    },
+
+    async delete(key, actorId) {
+      const before = await flags.delete(key);
+      if (!before) return null;
+      // A flag re-created under this key must not inherit the old flag's sticky results.
+      await assignments.deleteByFlag(key);
+      await audit.append({
+        at: clock.now(),
+        key,
+        actorId,
+        before,
+        after: null,
+      });
+      return before;
     },
 
     async evaluate(key, { userId, cohorts }) {

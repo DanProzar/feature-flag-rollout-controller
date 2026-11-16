@@ -4,6 +4,7 @@ import {
   FlagKeySchema,
   PutFlagBodySchema,
   ResetBodySchema,
+  UserCohortsBodySchema,
 } from "../schemas";
 
 const BODY = {
@@ -130,6 +131,23 @@ describe("EvaluateBodySchema", () => {
       EvaluateBodySchema.parse({ userId: "u1", cohorts: [], extra: 1 }),
     ).toStrictEqual({ userId: "u1", cohorts: [] });
   });
+});
+
+describe("UserCohortsBodySchema", () => {
+  it("trims and de-duplicates cohorts, stripping unknown fields", () => {
+    expect(
+      UserCohortsBodySchema.parse({ cohorts: ["a", " a", "b"], name: "x" }),
+    ).toStrictEqual({ cohorts: ["a", "b"] });
+  });
+
+  it.each([{}, { cohorts: "admin" }, { cohorts: [""] }])(
+    "rejects %j",
+    (body) => {
+      expect(failedFields(UserCohortsBodySchema.safeParse(body))).toEqual([
+        "cohorts",
+      ]);
+    },
+  );
 });
 
 describe("ResetBodySchema", () => {

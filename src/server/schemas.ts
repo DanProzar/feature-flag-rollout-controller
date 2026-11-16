@@ -32,6 +32,10 @@ export const EvaluateBodySchema = z.object({
 });
 export type EvaluateBody = z.infer<typeof EvaluateBodySchema>;
 
+/** The body of `PUT /api/users/:userId/cohorts`: the user's full cohort list. */
+export const UserCohortsBodySchema = z.object({ cohorts: CohortsSchema });
+export type UserCohortsBody = z.infer<typeof UserCohortsBodySchema>;
+
 export const ResetBodySchema = z.object({
   now: z.iso.datetime({ offset: true }).transform((now) => new Date(now)),
 });

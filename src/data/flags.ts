@@ -12,6 +12,8 @@ export interface FlagsRepository {
    * it was created.
    */
   upsert(flag: Flag): Promise<Flag | null>;
+  /** Removes the flag with `key`; returns it, or `null` when there was none. */
+  delete(key: string): Promise<Flag | null>;
 }
 
 export function createFlagsRepository(db: Db, clock: Clock): FlagsRepository {
@@ -53,6 +55,11 @@ export function createFlagsRepository(db: Db, clock: Clock): FlagsRepository {
         { upsert: true, returnDocument: "before" },
       );
       return before && FlagSchema.parse(before);
+    },
+
+    async delete(key) {
+      const doc = await flags.findOneAndDelete({ key });
+      return doc && FlagSchema.parse(doc);
     },
   };
 }

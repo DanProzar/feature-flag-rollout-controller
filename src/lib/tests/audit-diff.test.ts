@@ -46,6 +46,16 @@ describe("diffFlags", () => {
     ]);
   });
 
+  it("lists every field except key when the flag was deleted", () => {
+    expect(diffFlags(FLAG, null)).toEqual([
+      { field: "enabled", before: true, after: undefined },
+      { field: "percentage", before: 25, after: undefined },
+      { field: "includeCohorts", before: ["tester"], after: undefined },
+      { field: "excludeCohorts", before: [], after: undefined },
+      { field: "sticky", before: false, after: undefined },
+    ]);
+  });
+
   it("returns no changes for identical flags", () => {
     expect(diffFlags(FLAG, { ...FLAG })).toEqual([]);
   });

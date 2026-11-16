@@ -9,8 +9,9 @@ import {
 } from "@/server";
 import { GET as getAudit } from "../flags/[key]/audit/route";
 import { POST as postEvaluate } from "../flags/[key]/evaluate/route";
-import { PUT as putFlag } from "../flags/[key]/route";
+import { DELETE as deleteFlag, PUT as putFlag } from "../flags/[key]/route";
 import { POST as postReset } from "../test/reset/route";
+import { PUT as putUserCohorts } from "../users/[userId]/cohorts/route";
 
 export interface ApiResponse {
   status: number;
@@ -85,6 +86,29 @@ export async function put(
 ): Promise<ApiResponse> {
   return read(
     putFlag(request("PUT", `/api/flags/${key}`, body, headers), context(key)),
+  );
+}
+
+export async function del(
+  key: string,
+  headers?: Record<string, string>,
+): Promise<ApiResponse> {
+  return read(
+    deleteFlag(
+      request("DELETE", `/api/flags/${key}`, undefined, headers),
+      context(key),
+    ),
+  );
+}
+
+export async function putCohorts(
+  userId: string,
+  body: unknown,
+): Promise<ApiResponse> {
+  return read(
+    putUserCohorts(request("PUT", `/api/users/${userId}/cohorts`, body), {
+      params: Promise.resolve({ userId }),
+    }),
   );
 }
 
