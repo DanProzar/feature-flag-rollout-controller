@@ -12,10 +12,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { PendingContent } from "@/components/pending-button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import type { Flag } from "@/domain";
-import { readActor } from "@/lib/actor";
 import { putFlag } from "@/lib/api-client";
 import { formToPutBody } from "@/lib/flag-form";
 
@@ -42,7 +42,7 @@ export function KillSwitch({
     const result = await putFlag(
       flag.key,
       formToPutBody({ ...flag, enabled }),
-      readActor(),
+      null,
     );
     setPending(false);
     setConfirming(false);
@@ -91,10 +91,12 @@ export function KillSwitch({
             <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
+              className="relative"
               disabled={pending}
+              aria-busy={pending || undefined}
               onClick={() => void save(false)}
             >
-              {pending ? "Killing…" : "Kill flag"}
+              <PendingContent pending={pending}>Kill flag</PendingContent>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

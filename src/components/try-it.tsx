@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { type CohortOption, CohortEditor } from "@/components/cohort-editor";
+import { PendingButton } from "@/components/pending-button";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -28,9 +28,10 @@ export interface TryItUser {
   cohorts: string[];
 }
 
-const CUSTOM = "__custom__";
-
-/** Evaluates the flag for a seeded or typed-in user through the real evaluate endpoint. */
+/**
+ * Evaluates the flag for a seeded user through the real evaluate endpoint, sending the user's id
+ * as `X-User-Id`. The cohorts start as the user's own and can be changed for this evaluation only.
+ */
 export function TryIt({
   flagKey,
   sticky,
@@ -42,28 +43,19 @@ export function TryIt({
   users: TryItUser[];
   cohorts: CohortOption[];
 }) {
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
   const [userCohorts, setUserCohorts] = useState<string[]>([]);
   const [result, setResult] = useState<EvaluateFlagResult | null>(null);
   const [pending, setPending] = useState(false);
 
-  const items = [
-    { value: CUSTOM, label: "Custom user" },
-    ...users.map((user) => ({ value: user.userId, label: user.name })),
-  ];
-  const selected = users.some((user) => user.userId === userId)
-    ? userId
-    : CUSTOM;
+  const items = users.map((user) => ({ value: user.userId, label: user.name }));
+  const selected = users.find((user) => user.userId === userId);
 
   async function evaluate(event: React.FormEvent) {
     event.preventDefault();
+    if (!userId) return;
     setPending(true);
-    setResult(
-      await evaluateFlag(flagKey, {
-        userId: userId.trim(),
-        cohorts: userCohorts,
-      }),
-    );
+    setResult(await evaluateFlag(flagKey, { userId, cohorts: userCohorts }));
     setPending(false);
   }
 
@@ -81,24 +73,35 @@ export function TryIt({
         <form onSubmit={evaluate} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="try-user">Seeded user</Label>
+              <Label htmlFor="try-user">User</Label>
               <Select
                 items={items}
-                value={selected}
+                value={userId}
                 onValueChange={(value) => {
                   const user = users.find((u) => u.userId === value);
-                  setUserId(user?.userId ?? "");
+                  setUserId(user?.userId ?? null);
                   setUserCohorts(user ? [...user.cohorts] : []);
                   setResult(null);
                 }}
               >
                 <SelectTrigger id="try-user" className="w-full">
-                  <SelectValue />
+                  <SelectValue>
+                    {() =>
+                      selected ? (
+                        selected.name
+                      ) : (
+                        <span className="text-muted-foreground">
+                          Select a user
+                        </span>
+                      )
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {items.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
+                  {users.map((user) => (
+                    <SelectItem key={user.userId} value={user.userId}>
+                      {user.name}
+                      <UserCohorts cohorts={user.cohorts} />
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -108,14 +111,11 @@ export function TryIt({
               <Label htmlFor="try-user-id">User id</Label>
               <Input
                 id="try-user-id"
-                value={userId}
-                placeholder="any id, e.g. user-42"
-                autoComplete="off"
-                className="font-mono"
-                onChange={(event) => {
-                  setUserId(event.target.value);
-                  setResult(null);
-                }}
+                value={userId ?? ""}
+                readOnly
+                tabIndex={-1}
+                placeholder="Pick a user"
+                className="font-mono text-xs"
               />
             </div>
           </div>
@@ -130,16 +130,23 @@ export function TryIt({
                 setResult(null);
               }}
               catalogue={cohorts}
+              disabled={!userId}
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" disabled={pending || !userId.trim()}>
-              {pending ? "Evaluating…" : "Evaluate"}
-            </Button>
+            <PendingButton type="submit" pending={pending} disabled={!userId}>
+              Evaluate
+            </PendingButton>
             {result?.ok && (
               <div className="flex items-center gap-2" aria-live="polite">
-                <Badge variant={result.enabled ? "default" : "secondary"}>
+                <Badge
+                  className={
+                    result.enabled
+                      ? "bg-emerald-600 text-white dark:bg-emerald-500"
+                      : "bg-red-600 text-white dark:bg-red-500"
+                  }
+                >
                   {result.enabled ? "true" : "false"}
                 </Badge>
                 <span className="font-mono text-sm">{result.reason}</span>
@@ -154,5 +161,21 @@ export function TryIt({
         </form>
       </CardContent>
     </Card>
+  );
+}
+
+/** A user's cohorts as small badges in a select option, or "no cohorts". */
+function UserCohorts({ cohorts }: { cohorts: string[] }) {
+  if (cohorts.length === 0) {
+    return <span className="text-xs text-muted-foreground">no cohorts</span>;
+  }
+  return (
+    <span className="flex flex-wrap gap-1">
+      {cohorts.map((cohort) => (
+        <Badge key={cohort} variant="outline" className="font-mono">
+          {cohort}
+        </Badge>
+      ))}
+    </span>
   );
 }

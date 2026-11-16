@@ -1,27 +1,29 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useState, useTransition } from "react";
 import { type CohortOption, CohortEditor } from "@/components/cohort-editor";
-import { Button } from "@/components/ui/button";
+import { PendingButton } from "@/components/pending-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { readActor } from "@/lib/actor";
 import { putFlag } from "@/lib/api-client";
 import {
   type FieldErrors,
   type FlagFormValues,
   formToPutBody,
   issuesToFieldErrors,
+  USER_COHORT,
   validateFlagForm,
+  withIncludeCohorts,
 } from "@/lib/flag-form";
 
 /**
  * Creates or edits a flag through `PUT /api/flags/:key`. On edit the key is read-only and the kill
  * state is left to the kill switch; the page remounts this form whenever the stored flag changes,
- * so a save never sends a stale `enabled`.
+ * so a save never sends a stale `enabled`. On create the percentage follows the include cohorts
+ * (100%, or 0% once `user` is included; see `withIncludeCohorts`) and saving returns to the list.
  */
 export function FlagForm({
   mode,
@@ -39,6 +41,8 @@ export function FlagForm({
   const [errors, setErrors] = useState<FieldErrors>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Keeps the spinner up until the list (create) or the refreshed page (edit) has rendered.
+  const [navigating, startNavigation] = useTransition();
 
   const { warnings } = validateFlagForm(values, existingKeys, mode);
 
@@ -57,22 +61,17 @@ export function FlagForm({
     if (!check.valid) return;
 
     setSaving(true);
-    const result = await putFlag(
-      values.key,
-      formToPutBody(values),
-      readActor(),
-    );
+    const result = await putFlag(values.key, formToPutBody(values), null);
     setSaving(false);
     if (!result.ok) {
       setErrors(issuesToFieldErrors(result.issues));
       setFailure(`Save failed: ${result.error}`);
       return;
     }
-    if (mode === "create") {
-      router.push(`/flags/${result.flag.key}`);
-    } else {
-      router.refresh();
-    }
+    startNavigation(() => {
+      if (mode === "create") router.push("/");
+      else router.refresh();
+    });
   }
 
   return (
@@ -132,13 +131,21 @@ export function FlagForm({
       <Field
         id="flag-include"
         label="Include cohorts"
-        hint="Forced on, bypassing the percentage."
+        hint={
+          mode === "create"
+            ? `Forced on, bypassing the percentage. Including "${USER_COHORT}" starts a gradual rollout at 0%.`
+            : "Forced on, bypassing the percentage."
+        }
         errors={errors.includeCohorts}
       >
         <CohortEditor
           id="flag-include"
           value={values.includeCohorts}
-          onChange={(next) => set("includeCohorts", next)}
+          onChange={(next) =>
+            mode === "create"
+              ? setValues((current) => withIncludeCohorts(current, next))
+              : set("includeCohorts", next)
+          }
           catalogue={cohorts}
           invalid={!!errors.includeCohorts}
         />
@@ -169,9 +176,9 @@ export function FlagForm({
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" disabled={saving}>
-          {saving ? "Saving…" : mode === "create" ? "Create flag" : "Save"}
-        </Button>
+        <PendingButton type="submit" pending={saving || navigating}>
+          {mode === "create" ? "Create flag" : "Save"}
+        </PendingButton>
         {failure && (
           <p role="alert" className="text-sm text-destructive">
             {failure}

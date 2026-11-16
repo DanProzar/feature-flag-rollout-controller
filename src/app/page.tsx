@@ -1,7 +1,9 @@
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { DeleteFlagButton } from "@/components/delete-flag-button";
 import { CohortBadges } from "@/components/flag-badges";
 import { KillSwitch } from "@/components/kill-switch";
+import { LinkRow } from "@/components/link-row";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -44,11 +46,14 @@ export default async function FlagsPage() {
                 <TableHead>Sticky</TableHead>
                 <TableHead>Include</TableHead>
                 <TableHead>Exclude</TableHead>
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {flags.map((flag) => (
-                <TableRow key={flag.key}>
+                <LinkRow key={flag.key} href={`/flags/${flag.key}`}>
                   <TableCell className="font-medium">
                     <Link
                       href={`/flags/${flag.key}`}
@@ -79,7 +84,10 @@ export default async function FlagsPage() {
                       variant="destructive"
                     />
                   </TableCell>
-                </TableRow>
+                  <TableCell className="text-right">
+                    <DeleteFlagButton flagKey={flag.key} />
+                  </TableCell>
+                </LinkRow>
               ))}
             </TableBody>
           </Table>
