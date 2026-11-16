@@ -1,12 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { SEED_USERS, seed } from "@/data";
-import { appClock } from "@/server";
+import { frozenClock } from "@/domain";
 import { audit, evaluate, put, reset, useApi } from "./helpers";
 
 // Roadmap item 27: the API behaviour end to end, through the route handlers.
 
-const t = useApi();
 const NOW = "2026-01-01T00:00:00.000Z";
+// Exact audit `at` values come from a frozen clock injected into the services, not from the reset.
+const clock = frozenClock(new Date(NOW));
+const t = useApi(clock);
 
 const FLAG = {
   enabled: true,
@@ -16,26 +18,27 @@ const FLAG = {
   sticky: true,
 };
 
-beforeAll(() => vi.stubEnv("ENABLE_TEST_ENDPOINTS", "true"));
-afterAll(() => vi.unstubAllEnvs());
+beforeAll(() => {
+  vi.stubEnv("ENABLE_TEST_ENDPOINTS", "true");
+  vi.spyOn(console, "info").mockImplementation(() => {});
+});
+afterAll(() => {
+  vi.unstubAllEnvs();
+  vi.restoreAllMocks();
+});
 
 async function start(now = NOW) {
   expect(await reset({ now })).toEqual({ status: 200, body: { now } });
 }
 
 describe("reset", () => {
-  it("with now gives exact audit `at` values", async () => {
+  it("answers { now }; audit `at` values come from the services' clock", async () => {
     await start();
     await put("demo", FLAG);
+    await start("2026-02-03T04:05:06.789Z");
     await put("demo", { ...FLAG, percentage: 0 });
     const { body } = await audit("demo");
     expect(body.entries.map((e: { at: string }) => e.at)).toEqual([NOW, NOW]);
-
-    await start("2026-02-03T04:05:06.789Z");
-    await put("demo", FLAG);
-    expect((await audit("demo")).body.entries[2].at).toBe(
-      "2026-02-03T04:05:06.789Z",
-    );
   });
 
   it("without now answers 400", async () => {
@@ -43,8 +46,6 @@ describe("reset", () => {
     const res = await reset({});
     expect(res.status).toBe(400);
     expect(Object.keys(res.body.issues)).toEqual(["now"]);
-    // The clock stays where the last successful reset froze it.
-    expect(appClock.now().toISOString()).toBe(NOW);
   });
 
   it("keeps the audit log; a re-created flag gets before: null", async () => {
@@ -211,7 +212,7 @@ describe("seed data through the API", () => {
 
   it("seed flags × seed users match the Phase 2 table", async () => {
     await start();
-    await seed(t.db, appClock);
+    await seed(t.db, clock);
     for (const [key, byUser] of Object.entries(EXPECTED)) {
       for (const { userId, name, cohorts } of SEED_USERS) {
         const [enabled, reason] = byUser[name];

@@ -10,7 +10,7 @@ import {
 } from "../data";
 import type { Clock } from "../domain";
 import { type CatalogService, createCatalogService } from "./catalog";
-import { appClock, freezeClock } from "./clock";
+import { appClock } from "./clock";
 import { createFlagService, type FlagService } from "./flags";
 import { createResetService, type ResetService } from "./reset";
 
@@ -28,7 +28,7 @@ export function createServices(db: Db, clock: Clock): Services {
       audit: createAuditRepository(db),
       clock,
     }),
-    reset: createResetService({ db, freezeClock }),
+    reset: createResetService({ db }),
     catalog: createCatalogService({
       users: createUsersRepository(db),
       cohorts: createCohortsRepository(db),

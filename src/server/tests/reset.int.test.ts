@@ -1,13 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { seed } from "../../data";
 import { useTestDb } from "../../data/tests/harness";
 import { frozenClock } from "../../domain";
+import { appClock } from "../clock";
 import { createResetService } from "../reset";
 
 const t = useTestDb();
 const NOW = "2026-01-01T00:00:00.000Z";
 
 beforeEach(() => t.clear());
+afterEach(() => vi.restoreAllMocks());
 
 async function counts() {
   const names = ["flags", "assignments", "audit", "users", "cohorts"];
@@ -21,15 +23,16 @@ async function counts() {
 }
 
 describe("reset service", () => {
-  it("clears flags and assignments, keeps the rest, freezes the clock", async () => {
+  it("clears flags and assignments, keeps the rest, leaves the clock alone", async () => {
     await seed(t.db, frozenClock(new Date(NOW)));
     await t.db
       .collection("assignments")
       .insertOne({ flagKey: "new-checkout", userId: "u1", value: true });
     await t.db.collection("audit").insertOne({ key: "new-checkout" });
-    const freezeClock = vi.fn();
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
 
-    await createResetService({ db: t.db, freezeClock }).reset(new Date(NOW));
+    const before = Date.now();
+    await createResetService({ db: t.db }).reset(new Date(NOW));
 
     expect(await counts()).toEqual({
       flags: 0,
@@ -38,7 +41,9 @@ describe("reset service", () => {
       users: 6,
       cohorts: 4,
     });
-    expect(freezeClock).toHaveBeenCalledOnce();
-    expect(freezeClock.mock.calls[0][0].toISOString()).toBe(NOW);
+    expect(info).toHaveBeenCalledWith(
+      `Reset flags and sticky assignments at ${NOW}`,
+    );
+    expect(appClock.now().getTime()).toBeGreaterThanOrEqual(before);
   });
 });

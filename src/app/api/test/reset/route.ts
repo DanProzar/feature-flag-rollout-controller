@@ -11,8 +11,9 @@ import {
 export const dynamic = "force-dynamic";
 
 /**
- * Test support: clears flags and sticky assignments and freezes the clock at `now`. Unless
- * `ENABLE_TEST_ENDPOINTS` is `"true"`, Next answers its own 404, before the body is read.
+ * Test support: clears flags and sticky assignments and records `now` as the reset time (logged and
+ * echoed back; the clock keeps running). Unless `ENABLE_TEST_ENDPOINTS` is `"true"`, Next answers
+ * its own 404, before the body is read.
  */
 export const POST = handle(async (request: NextRequest) => {
   if (!testEndpointsEnabled()) notFound();

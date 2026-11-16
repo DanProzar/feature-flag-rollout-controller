@@ -1,12 +1,8 @@
 import { NextRequest } from "next/server";
 import { afterAll, beforeAll } from "vitest";
 import { type TestDb, useTestDb } from "@/data/tests/harness";
-import {
-  appClock,
-  createServices,
-  setServicesForTesting,
-  unfreezeClock,
-} from "@/server";
+import type { Clock } from "@/domain";
+import { appClock, createServices, setServicesForTesting } from "@/server";
 import { GET as getAudit } from "../flags/[key]/audit/route";
 import { POST as postEvaluate } from "../flags/[key]/evaluate/route";
 import { DELETE as deleteFlag, PUT as putFlag } from "../flags/[key]/route";
@@ -20,16 +16,14 @@ export interface ApiResponse {
 }
 
 /**
- * Points the route handlers at this file's test database (`useTestDb()`) and the app clock;
- * unfreezes the clock and clears the override after the file's tests.
+ * Points the route handlers at this file's test database (`useTestDb()`) and `clock` (the app
+ * clock by default; pass a `frozenClock` for exact audit `at` values); clears the override after
+ * the file's tests.
  */
-export function useApi(): TestDb {
+export function useApi(clock: Clock = appClock): TestDb {
   const t = useTestDb();
-  beforeAll(() => setServicesForTesting(createServices(t.db, appClock)));
-  afterAll(() => {
-    unfreezeClock();
-    setServicesForTesting(null);
-  });
+  beforeAll(() => setServicesForTesting(createServices(t.db, clock)));
+  afterAll(() => setServicesForTesting(null));
   return t;
 }
 
