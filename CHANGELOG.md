@@ -12,6 +12,14 @@
 - Added loading spinners to buttons that keep the button's width while saving or evaluating
 - Added flag list/get and a catalog service for server-side page reads, and unit-tested UI helpers under the 100% coverage gate
 - Added Phase 4 admin UI spec, documented the UI and new endpoints, and marked Phase 4 complete
+- Added success toasts with details of each change (e.g. `percentage: 10% → 25%`, cohorts added/removed) for every admin write
+- Replaced inline failure texts with destructive Alerts in the flag form, delete dialog, user rows and Try it, plus a page-level Alert for kill-switch and reset failures
+- Added a header Reset button in the dev stack (only with `ENABLE_TEST_ENDPOINTS=true`) that clears flags and sticky assignments after a confirmation
+- Changed `POST /api/test/reset` to no longer freeze the clock: `now` is recorded as the reset time, and tests inject a frozen clock instead
+- Added loading skeletons for every page, error and global-error pages with Try again, a styled not-found page and `Empty` states for empty lists
+- Added `MONGODB_SERVER_SELECTION_TIMEOUT_MS` (default 5 s) so an unreachable database shows the error page within seconds
+- Switched the UI to a white-only theme, removing dark-mode styles
+- Rewrote the README as a developer guide with verified `curl` examples and troubleshooting, and marked Phase 5 complete
 
 ## 2026-11-15
 
