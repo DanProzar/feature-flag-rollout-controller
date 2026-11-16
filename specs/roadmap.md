@@ -62,13 +62,22 @@ is committed on its own.
 30. Prominent kill-switch `Switch` with an `AlertDialog` confirmation.
 31. "Try it" evaluator panel (`Card`): enter userId + cohorts, see `enabled` + `reason`.
 32. Audit history view per flag: time, actor, before → after diff.
+    Review follow-ups: `/users` page to edit users' cohorts (`PUT /api/users/:userId/cohorts`);
+    delete flags from the list (`DELETE /api/flags/:key`, audited, clears sticky assignments);
+    whole list rows open the flag; "Acting as" removed from the header (Phase 6); Try it picks a
+    seeded user only (cohorts shown per option, read-only id, `X-User-Id` sent, green/red result);
+    click-to-add cohort combobox; spinner buttons that keep their width; new flags default to 100%,
+    switching to 0% while `user` is included; creating a flag returns to the list.
 
 ## Phase 5 — Polish
-33. Error, loading and empty states (shadcn `Skeleton`, `Alert`, `Sonner` toasts).
+33. Error, loading and empty states (shadcn `Skeleton`, `Alert`, `Sonner` toasts), including a
+    success/failure alert after saving the flag's "Rollout rules" (and the other admin saves).
 34. README: run instructions (`docker compose up`), API examples with `curl`.
 
 ## Phase 6 — Demo page (`src/app/demo`)
 35. `/demo` page in the existing app that calls `POST /api/flags/:key/evaluate` like a real client.
 36. User switcher → flag grid: pick a seeded user, see every seeded flag's `enabled` + `reason`.
+    The "Acting as" selector (`src/components/actor-select.tsx`, `src/lib/actor.ts`), removed from
+    the admin header in Phase 4, lives here.
 37. Mock product UI: a fake storefront whose features (checkout, dark mode, search, banner,
     assistant) appear or disappear according to the seeded flags for the selected user.
