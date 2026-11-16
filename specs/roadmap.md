@@ -43,8 +43,9 @@ is committed on its own.
 
 ## Phase 3 — HTTP API (`src/app/api`) ✅ Complete
 21. Zod schemas: PUT body (all five fields required), evaluate body, reset body (`now` required).
-22. `POST /api/test/reset { now }`: clears flags + sticky, freezes the clock at `now`; mounted only
-    when `ENABLE_TEST_ENDPOINTS=true`.
+22. `POST /api/test/reset { now }`: clears flags + sticky and records `now` as the reset time
+    (echoed back and logged; since Phase 5 the clock is not frozen); mounted only when
+    `ENABLE_TEST_ENDPOINTS=true`.
 23. `PUT /api/flags/:key`: full-replace upsert → `200 { flag }`; `400` on missing/invalid fields.
 24. Audit on PUT: append `{ at, key, actorId, before, after }`, `actorId` from `X-User-Id` or `null`.
 25. `GET /api/flags/:key/audit` → list of entries.
@@ -69,10 +70,14 @@ is committed on its own.
     click-to-add cohort combobox; spinner buttons that keep their width; new flags default to 100%,
     switching to 0% while `user` is included; creating a flag returns to the list.
 
-## Phase 5 — Polish
+## Phase 5 — Polish ✅ Complete
 33. Error, loading and empty states (shadcn `Skeleton`, `Alert`, `Sonner` toasts), including a
     success/failure alert after saving the flag's "Rollout rules" (and the other admin saves).
 34. README: run instructions (`docker compose up`), API examples with `curl`.
+    Follow-ups: white (light) theme only; a header **Reset** button in the dev stack
+    (`ENABLE_TEST_ENDPOINTS=true`), with the reset no longer freezing the clock (tests inject
+    `frozenClock` instead); `MONGODB_SERVER_SELECTION_TIMEOUT_MS` (default 5 s) so a down database
+    shows the error page quickly.
 
 ## Phase 6 — Demo page (`src/app/demo`)
 35. `/demo` page in the existing app that calls `POST /api/flags/:key/evaluate` like a real client.
