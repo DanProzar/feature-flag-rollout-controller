@@ -1,3 +1,11 @@
+import { Users } from "lucide-react";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { UserCohortsRow } from "@/components/user-cohorts-row";
 import {
   Table,
@@ -29,9 +37,18 @@ export default async function UsersPage() {
       </div>
 
       {users.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          No users yet. Run the seed script to add the demo users.
-        </p>
+        <Empty className="border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Users />
+            </EmptyMedia>
+            <EmptyTitle>No users</EmptyTitle>
+            <EmptyDescription>
+              Run <code className="font-mono">npm run seed</code> to add the
+              demo users.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <div className="rounded-lg border">
           <Table>

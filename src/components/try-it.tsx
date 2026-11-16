@@ -1,5 +1,6 @@
 "use client";
 
+import { UserX } from "lucide-react";
 import { useState } from "react";
 import { type CohortOption, CohortEditor } from "@/components/cohort-editor";
 import { ErrorAlert } from "@/components/error-alert";
@@ -12,6 +13,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -71,93 +79,108 @@ export function TryIt({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={evaluate} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+        {users.length === 0 ? (
+          <Empty className="p-4">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <UserX />
+              </EmptyMedia>
+              <EmptyTitle>No users to evaluate</EmptyTitle>
+              <EmptyDescription>Seed the demo users first.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <form onSubmit={evaluate} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="try-user">User</Label>
+                <Select
+                  items={items}
+                  value={userId}
+                  onValueChange={(value) => {
+                    const user = users.find((u) => u.userId === value);
+                    setUserId(user?.userId ?? null);
+                    setUserCohorts(user ? [...user.cohorts] : []);
+                    setResult(null);
+                  }}
+                >
+                  <SelectTrigger id="try-user" className="w-full">
+                    <SelectValue>
+                      {() =>
+                        selected ? (
+                          selected.name
+                        ) : (
+                          <span className="text-muted-foreground">
+                            Select a user
+                          </span>
+                        )
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.userId} value={user.userId}>
+                        {user.name}
+                        <UserCohorts cohorts={user.cohorts} />
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="try-user-id">User id</Label>
+                <Input
+                  id="try-user-id"
+                  value={userId ?? ""}
+                  readOnly
+                  tabIndex={-1}
+                  placeholder="Pick a user"
+                  className="font-mono text-xs"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="try-user">User</Label>
-              <Select
-                items={items}
-                value={userId}
-                onValueChange={(value) => {
-                  const user = users.find((u) => u.userId === value);
-                  setUserId(user?.userId ?? null);
-                  setUserCohorts(user ? [...user.cohorts] : []);
+              <Label htmlFor="try-cohorts">Cohorts</Label>
+              <CohortEditor
+                id="try-cohorts"
+                value={userCohorts}
+                onChange={(next) => {
+                  setUserCohorts(next);
                   setResult(null);
                 }}
-              >
-                <SelectTrigger id="try-user" className="w-full">
-                  <SelectValue>
-                    {() =>
-                      selected ? (
-                        selected.name
-                      ) : (
-                        <span className="text-muted-foreground">
-                          Select a user
-                        </span>
-                      )
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.userId} value={user.userId}>
-                      {user.name}
-                      <UserCohorts cohorts={user.cohorts} />
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="try-user-id">User id</Label>
-              <Input
-                id="try-user-id"
-                value={userId ?? ""}
-                readOnly
-                tabIndex={-1}
-                placeholder="Pick a user"
-                className="font-mono text-xs"
+                catalogue={cohorts}
+                disabled={!userId}
               />
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="try-cohorts">Cohorts</Label>
-            <CohortEditor
-              id="try-cohorts"
-              value={userCohorts}
-              onChange={(next) => {
-                setUserCohorts(next);
-                setResult(null);
-              }}
-              catalogue={cohorts}
-              disabled={!userId}
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <PendingButton type="submit" pending={pending} disabled={!userId}>
-              Evaluate
-            </PendingButton>
-            {result?.ok && (
-              <div className="flex items-center gap-2" aria-live="polite">
-                <Badge
-                  className={
-                    result.enabled
-                      ? "bg-emerald-600 text-white"
-                      : "bg-red-600 text-white"
-                  }
-                >
-                  {result.enabled ? "true" : "false"}
-                </Badge>
-                <span className="font-mono text-sm">{result.reason}</span>
-              </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <PendingButton type="submit" pending={pending} disabled={!userId}>
+                Evaluate
+              </PendingButton>
+              {result?.ok && (
+                <div className="flex items-center gap-2" aria-live="polite">
+                  <Badge
+                    className={
+                      result.enabled
+                        ? "bg-emerald-600 text-white"
+                        : "bg-red-600 text-white"
+                    }
+                  >
+                    {result.enabled ? "true" : "false"}
+                  </Badge>
+                  <span className="font-mono text-sm">{result.reason}</span>
+                </div>
+              )}
+            </div>
+            {result && !result.ok && (
+              <ErrorAlert
+                title="Evaluation failed"
+                description={result.error}
+              />
             )}
-          </div>
-          {result && !result.ok && (
-            <ErrorAlert title="Evaluation failed" description={result.error} />
-          )}
-        </form>
+          </form>
+        )}
       </CardContent>
     </Card>
   );

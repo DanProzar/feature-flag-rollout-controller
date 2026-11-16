@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Flag, Plus } from "lucide-react";
 import Link from "next/link";
 import { DeleteFlagButton } from "@/components/delete-flag-button";
 import { CohortBadges } from "@/components/flag-badges";
@@ -6,6 +6,14 @@ import { KillSwitch } from "@/components/kill-switch";
 import { LinkRow } from "@/components/link-row";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import {
   Table,
   TableBody,
@@ -32,9 +40,23 @@ export default async function FlagsPage() {
       </div>
 
       {flags.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          No flags yet. Create one to start a rollout.
-        </p>
+        <Empty className="border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Flag />
+            </EmptyMedia>
+            <EmptyTitle>No flags yet</EmptyTitle>
+            <EmptyDescription>
+              Create a flag to start a rollout.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Link href="/flags/new" className={buttonVariants()}>
+              <Plus />
+              New flag
+            </Link>
+          </EmptyContent>
+        </Empty>
       ) : (
         <div className="rounded-lg border">
           <Table>

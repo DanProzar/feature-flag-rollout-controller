@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -7,6 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { diffFlags, FIELD_LABELS, formatFieldValue } from "@/lib/audit-diff";
 import type { AuditEntry } from "@/server";
 
@@ -36,9 +43,17 @@ export function AuditHistory({
       </CardHeader>
       <CardContent>
         {newestFirst.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No changes recorded yet.
-          </p>
+          <Empty className="p-4">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <History />
+              </EmptyMedia>
+              <EmptyTitle>No changes recorded yet</EmptyTitle>
+              <EmptyDescription>
+                Every save, kill and delete will appear here.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
           <ol className="divide-y">
             {newestFirst.map((entry, i) => {
