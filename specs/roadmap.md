@@ -55,7 +55,7 @@ is committed on its own.
     PUT missing a field → `400`; sticky flag keeps value after percentage drops; non-sticky flag
     follows new percentage; kill/exclude/include override sticky without overwriting it.
 
-## Phase 4 — Admin UI (`src/app`, built with shadcn/ui)
+## Phase 4 — Admin UI (`src/app`, built with shadcn/ui) ✅ Complete
 28. Flags list page (key, kill state, percentage, sticky, cohorts) using `Table` and `Badge`.
 29. Create/edit flag form (percentage `Slider`, include/exclude cohort editors, sticky `Switch`),
     saving via `PUT`.
