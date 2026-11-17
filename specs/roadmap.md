@@ -79,10 +79,13 @@ is committed on its own.
     `frozenClock` instead); `MONGODB_SERVER_SELECTION_TIMEOUT_MS` (default 5 s) so a down database
     shows the error page quickly.
 
-## Phase 6 — Demo page (`src/app/demo`)
+## Phase 6 — Demo page (`src/app/demo`) ✅ Complete
 35. `/demo` page in the existing app that calls `POST /api/flags/:key/evaluate` like a real client.
 36. User switcher → flag grid: pick a seeded user, see every seeded flag's `enabled` + `reason`.
     The "Acting as" selector (`src/components/actor-select.tsx`, `src/lib/actor.ts`), removed from
     the admin header in Phase 4, lives here.
 37. Mock product UI: a fake storefront whose features (checkout, dark mode, search, banner,
     assistant) appear or disappear according to the seeded flags for the selected user.
+    Follow-ups: every off feature shows its legacy variant (all off → the complete legacy store,
+    badged); the selected user is kept in an `httpOnly` `ff_demo_user` session cookie set by a
+    validating Server Function, replacing the `localStorage` actor (`src/lib/actor.ts` removed).

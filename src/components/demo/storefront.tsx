@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 // A fake shop whose features follow the seed flags. The structure never changes: each flag only
 // swaps what fills its slot, so an off feature shows the legacy variant rather than a hole. Dark
-// mode is explicit classes on this card only (no `dark:` variant), so the app stays light.
+// mode is explicit classes on this card only (no Tailwind dark variant), so the app stays light.
 
 const PRODUCTS = [
   { name: "Trail runner", price: "$89" },
@@ -15,25 +15,24 @@ const PRODUCTS = [
   { name: "Wool beanie", price: "$19" },
 ];
 
-const THEMES = {
-  light: {
-    card: "bg-white text-zinc-900 ring-zinc-200",
-    muted: "text-zinc-500",
-    surface: "border-zinc-200 bg-zinc-50",
-    button: "bg-zinc-900 text-zinc-50",
-  },
-  dark: {
-    card: "bg-zinc-900 text-zinc-50 ring-zinc-800",
-    muted: "text-zinc-400",
-    surface: "border-zinc-800 bg-zinc-800/60",
-    button: "bg-zinc-50 text-zinc-900",
-  },
+type Theme = Record<"card" | "muted" | "surface" | "button", string>;
+
+const LIGHT: Theme = {
+  card: "bg-white text-zinc-900 ring-zinc-200",
+  muted: "text-zinc-500",
+  surface: "border-zinc-200 bg-zinc-50",
+  button: "bg-zinc-900 text-zinc-50",
 };
 
-type Theme = (typeof THEMES)["light"];
+const DARK: Theme = {
+  card: "bg-zinc-900 text-zinc-50 ring-zinc-800",
+  muted: "text-zinc-400",
+  surface: "border-zinc-800 bg-zinc-800/60",
+  button: "bg-zinc-50 text-zinc-900",
+};
 
 export function Storefront({ model }: { model: StorefrontModel }) {
-  const theme = model.darkMode ? THEMES.dark : THEMES.light;
+  const theme = model.darkMode ? DARK : LIGHT;
 
   return (
     <Card
