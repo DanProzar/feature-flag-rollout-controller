@@ -1,14 +1,18 @@
 services:
   mongo:
     image: mongo:8
+    # mongod can't log below info level; drop "s":"I" lines so only warnings/errors show.
+    # exec keeps mongod as PID 1 so `docker stop` still shuts it down cleanly.
+    command: ["bash", "-c", "exec docker-entrypoint.sh mongod > >(grep --line-buffered -v '\"s\":\"I\"')"]
     volumes:
       - mongo-data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
-      interval: 5s
+      interval: 30s
       timeout: 5s
       retries: 10
       start_period: 10s
+      start_interval: 2s
 
   seed:
     build:
