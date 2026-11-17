@@ -8,6 +8,26 @@
 - Moved the "Acting as" selector to `/demo`, remembering the chosen user in an `httpOnly`, `Secure`, `SameSite=Strict` session cookie (`ff_demo_user`) set by a validating Server Function instead of `localStorage`
 - Fixed flicker on user switch and Refresh by showing each round of results in one step
 - Added the Phase 6 demo page spec, documented the demo page in the README and tech stack, and marked Phase 6 complete
+- Added a title to every page, plus accessible flag-form messages: errors are announced and linked to their fields, and focus moves to the first invalid field
+- Added request limits: ids, cohorts and `X-User-Id` up to 200 characters, and at most 100 cohorts per list. The users route now rejects a malformed `:userId` with `400`
+- Fixed flipping the kill switch so it no longer discards unsaved rule edits, and Save no longer undoes a kill
+- Fixed the kill switch flicking back before the refresh landed
+- Fixed Try it showing the previous user's answer
+- Fixed `/demo` rows stuck as skeletons after a new flag appeared, and the legacy store flashing on first load
+- Fixed a re-created flag inheriting a sticky assignment that an evaluation racing its deletion had stored
+- Fixed a possible `500` when a racing assignment was removed during evaluation
+- Made evaluation of killed, excluded and included sticky flags skip reading the stored assignment
+- Made the audit history query use an index that matches its sort
+- Made non-object JSON bodies report their problem under `issues.body`
+- Improved contrast, heading structure and screen-reader live regions
+- Hid secondary table columns on narrow screens
+- Replaced duplicated UI with shared components and removed dead code
+- Slimmed the Docker build: smaller context, npm and Next build caches, and a non-root seed container
+- Kept the dev container's `.next` separate from the host's
+- Moved build-time-only packages to dev dependencies
+- Added the Phase 7 polish spec
+- Synced the mission, tech stack, roadmap and README with the code, adding a glossary, spec links and status lines on earlier phase specs
+- Taught the `feature-spec` skill fix branches and requirement IDs
 
 ## 2026-11-16
 
