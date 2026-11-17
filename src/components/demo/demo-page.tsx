@@ -1,7 +1,13 @@
 "use client";
 
 import { RefreshCw, Users } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { selectDemoUser } from "@/app/demo/actions";
 import { type ActorOption, ActorSelect } from "@/components/actor-select";
 import { FlagGrid } from "@/components/demo/flag-grid";
@@ -9,6 +15,7 @@ import { Storefront } from "@/components/demo/storefront";
 import { ErrorAlert } from "@/components/error-alert";
 import { CohortBadges } from "@/components/flag-badges";
 import { PendingButton } from "@/components/pending-button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Empty,
   EmptyDescription,
@@ -24,10 +31,11 @@ import {
 } from "@/lib/demo";
 
 // Behaves like a client application: every stored flag is evaluated for the selected user through
-// the public evaluate endpoint, in parallel, on mount, on switch and on Refresh. Each round is a
-// "run" whose answers are shown together once all have arrived, so the grid and storefront swap in
-// one step instead of flickering through skeletons and the legacy store; until then the previous
-// run's answers stay. Answers from an older run (e.g. a user switched away from) are discarded.
+// the public evaluate endpoint, in parallel. A run starts whenever what it evaluates changes (the
+// user, their stored cohorts or the set of flag keys, e.g. on mount, on switch or when fresh props
+// bring a new flag) and on Refresh. A run's answers are shown together once all have arrived, so
+// the grid and storefront swap in one step instead of flickering through skeletons and the legacy
+// store; until then the previous run's answers stay. Answers from an older run are discarded.
 
 interface Results {
   run: number;
@@ -49,54 +57,45 @@ export function DemoPage({
   const [rememberFailed, setRememberFailed] = useState(false);
   const [, startTransition] = useTransition();
   const runRef = useRef(0);
-  const startedRef = useRef(false);
+  // What the latest run evaluated; a ref, so Strict Mode's effect replay starts no duplicate run.
+  const startedForRef = useRef<string | null>(null);
 
   // The server re-renders after the cookie is set; a user missing from fresh props falls back.
   const user = users.find((u) => u.userId === userId) ?? users[0] ?? null;
   const flagKeys = flags.map(({ key }) => key);
-  // Rows missing from the shown run (first load, a newly created flag) render as loading.
+  const inputs = user && JSON.stringify([user.userId, user.cohorts, flagKeys]);
   const evaluations = results.byKey;
+  const firstRunDone = results.run !== -1;
   const pending = user !== null && results.run !== run;
 
-  const evaluate = useCallback(
-    (target: ActorOption, keys: string[], forRun: number) => {
-      const ctx = { userId: target.userId, cohorts: target.cohorts };
-      // `evaluateFlag` never rejects: a failed call is an `error` row.
-      void Promise.all(
-        keys.map(async (key) => [
-          key,
-          toDemoEvaluation(await evaluateFlag(key, ctx)),
-        ]),
-      ).then((entries) => {
-        if (runRef.current !== forRun) return;
-        setResults({ run: forRun, byKey: Object.fromEntries(entries) });
-      });
-    },
-    [],
-  );
-
   function start(target: ActorOption) {
-    const next = runRef.current + 1;
-    runRef.current = next;
-    setRun(next);
-    evaluate(target, flagKeys, next);
+    const forRun = ++runRef.current;
+    startedForRef.current = inputs;
+    setRun(forRun);
+    const ctx = { userId: target.userId, cohorts: target.cohorts };
+    // `evaluateFlag` never rejects: a failed call is an `error` row.
+    void Promise.all(
+      flagKeys.map(async (key) => [
+        key,
+        toDemoEvaluation(await evaluateFlag(key, ctx)),
+      ]),
+    ).then((entries) => {
+      if (runRef.current !== forRun) return;
+      setResults({ run: forRun, byKey: Object.fromEntries(entries) });
+    });
   }
 
-  // The first run, once (refs survive Strict Mode's effect replay, so no duplicate requests).
-  const initial = useRef({ user, flagKeys });
-  useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-    const { user: first, flagKeys: keys } = initial.current;
-    if (first) evaluate(first, keys, 0);
-  }, [evaluate]);
+  const startForInputs = useEffectEvent(() => {
+    if (user && inputs !== startedForRef.current) start(user);
+  });
+  useEffect(() => startForInputs(), [inputs]);
 
   function selectUser(nextId: string) {
     const next = users.find((u) => u.userId === nextId);
     if (!next || next.userId === user?.userId) return;
+    // The effect above starts the run for the new user.
     setUserId(next.userId);
     setRememberFailed(false);
-    start(next);
     startTransition(async () => {
       const result = await selectDemoUser(next.userId).catch(() => null);
       if (!result?.ok) startTransition(() => setRememberFailed(true));
@@ -160,7 +159,12 @@ export function DemoPage({
             <FlagGrid flagKeys={flagKeys} evaluations={evaluations} />
           )}
         </div>
-        <Storefront model={storefrontModel(evaluations)} />
+        {/* Until the first answers arrive, a skeleton: never a flash of the legacy store. */}
+        {firstRunDone || user === null ? (
+          <Storefront model={storefrontModel(evaluations)} />
+        ) : (
+          <Skeleton className="h-96 rounded-xl" aria-hidden />
+        )}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { RotateCcw } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { usePageAlert } from "@/components/page-alert";
 import { PendingContent } from "@/components/pending-button";
@@ -28,6 +28,7 @@ import { resetToast } from "@/lib/toast-messages";
  */
 export function ResetButton() {
   const router = useRouter();
+  const pathname = usePathname();
   const pageAlert = usePageAlert();
   const [confirming, setConfirming] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -47,8 +48,9 @@ export function ResetButton() {
     showSuccessToast(resetToast(result.now));
     startNavigation(() => {
       setConfirming(false);
-      router.push("/");
-      router.refresh();
+      // Pages are dynamic, so navigating renders fresh data; on `/` itself only a refresh does.
+      if (pathname === "/") router.refresh();
+      else router.push("/");
     });
   }
 

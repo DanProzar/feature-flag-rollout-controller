@@ -29,9 +29,10 @@ export function UserCohortsRow({
   const [saving, setSaving] = useState(false);
   const [refreshing, startRefresh] = useTransition();
   const [failure, setFailure] = useState<string | null>(null);
+  // Order does not matter: the same cohorts re-added in another order are no change.
   const changed =
     value.length !== user.cohorts.length ||
-    value.some((cohort, i) => cohort !== user.cohorts[i]);
+    value.some((cohort) => !user.cohorts.includes(cohort));
   const inputId = `user-cohorts-${user.userId}`;
 
   async function save() {

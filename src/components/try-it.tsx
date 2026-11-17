@@ -1,7 +1,7 @@
 "use client";
 
 import { UserX } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { type CohortOption, CohortEditor } from "@/components/cohort-editor";
 import { ErrorAlert } from "@/components/error-alert";
 import { PendingButton } from "@/components/pending-button";
@@ -56,6 +56,8 @@ export function TryIt({
   const [userCohorts, setUserCohorts] = useState<string[]>([]);
   const [result, setResult] = useState<EvaluateFlagResult | null>(null);
   const [pending, setPending] = useState(false);
+  // Only the latest request may show its answer; changing the inputs makes older ones stale.
+  const requestRef = useRef(0);
 
   const items = users.map((user) => ({ value: user.userId, label: user.name }));
   const selected = users.find((user) => user.userId === userId);
@@ -63,8 +65,21 @@ export function TryIt({
   async function evaluate(event: React.FormEvent) {
     event.preventDefault();
     if (!userId) return;
+    const request = ++requestRef.current;
     setPending(true);
-    setResult(await evaluateFlag(flagKey, { userId, cohorts: userCohorts }));
+    const answer = await evaluateFlag(flagKey, {
+      userId,
+      cohorts: userCohorts,
+    });
+    if (request !== requestRef.current) return;
+    setResult(answer);
+    setPending(false);
+  }
+
+  /** Clears the shown answer and discards any in-flight one. */
+  function invalidate() {
+    requestRef.current++;
+    setResult(null);
     setPending(false);
   }
 
@@ -101,7 +116,7 @@ export function TryIt({
                     const user = users.find((u) => u.userId === value);
                     setUserId(user?.userId ?? null);
                     setUserCohorts(user ? [...user.cohorts] : []);
-                    setResult(null);
+                    invalidate();
                   }}
                 >
                   <SelectTrigger id="try-user" className="w-full">
@@ -147,7 +162,7 @@ export function TryIt({
                 value={userCohorts}
                 onChange={(next) => {
                   setUserCohorts(next);
-                  setResult(null);
+                  invalidate();
                 }}
                 catalogue={cohorts}
                 disabled={!userId}

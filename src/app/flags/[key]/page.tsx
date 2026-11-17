@@ -22,6 +22,8 @@ export default async function FlagPage({ params }: PageProps<"/flags/[key]">) {
   ]);
   if (!flag) notFound();
   const cohortOptions = cohorts.map(({ key, name }) => ({ key, name }));
+  // The form is keyed on the rules only: a kill-switch flip must not discard unsaved edits.
+  const { enabled, ...rules } = flag;
 
   return (
     <div className="space-y-6">
@@ -38,11 +40,12 @@ export default async function FlagPage({ params }: PageProps<"/flags/[key]">) {
             <CardTitle>Rollout rules</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Remount when the stored flag changes, so the form never holds stale values. */}
+            {/* Remount when the stored rules change, so the form never holds stale values. */}
             <FlagForm
-              key={JSON.stringify(flag)}
+              key={JSON.stringify(rules)}
               mode="edit"
               initial={flagToForm(flag)}
+              enabled={enabled}
               existingKeys={[]}
               cohorts={cohortOptions}
             />

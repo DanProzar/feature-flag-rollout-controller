@@ -29,6 +29,8 @@ export function LinkRow({
         // clicks that really happened inside the row count.
         if (!event.currentTarget.contains(target)) return;
         if (target.closest(INTERACTIVE)) return;
+        // Ending a drag-selection of text (e.g. copying a key) is not a click on the row.
+        if (window.getSelection()?.toString()) return;
         router.push(href);
       }}
     >

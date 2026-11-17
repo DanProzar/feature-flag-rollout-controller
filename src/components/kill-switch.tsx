@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,32 +25,29 @@ import { killSwitchToast } from "@/lib/toast-messages";
 /**
  * The flag's kill switch: on = live, off = killed. Killing asks for confirmation; going live again
  * applies at once. Either way the whole current flag is PUT with only `enabled` changed. A failure
- * closes the dialog and shows the page-level Alert, as rows and headers have no room for one.
+ * closes the dialog and shows the page-level Alert, as rows and headers have no room for one. On
+ * success the switch stays pending until the refreshed flag has rendered, so it never jumps back.
  */
-export function KillSwitch({
-  flag,
-  showLabel = true,
-}: {
-  flag: Flag;
-  showLabel?: boolean;
-}) {
+export function KillSwitch({ flag }: { flag: Flag }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
-  const [pending, setPending] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [refreshing, startRefresh] = useTransition();
+  const pending = saving || refreshing;
   const pageAlert = usePageAlert();
   const id = `kill-switch-${flag.key}`;
 
   async function save(enabled: boolean) {
-    setPending(true);
+    setSaving(true);
     pageAlert.clear();
     const result = await putFlag(
       flag.key,
       formToPutBody({ ...flag, enabled }),
       null,
     );
-    setPending(false);
-    setConfirming(false);
+    setSaving(false);
     if (!result.ok) {
+      setConfirming(false);
       pageAlert.show({
         title: enabled
           ? `Could not turn ${flag.key} back on`
@@ -60,7 +57,10 @@ export function KillSwitch({
       return;
     }
     showSuccessToast(killSwitchToast(flag.key, enabled));
-    router.refresh();
+    startRefresh(() => {
+      setConfirming(false);
+      router.refresh();
+    });
   }
 
   return (
@@ -70,15 +70,12 @@ export function KillSwitch({
           id={id}
           checked={flag.enabled}
           disabled={pending}
-          aria-label={showLabel ? undefined : `${flag.key} live`}
           onCheckedChange={(checked) => {
             if (checked) void save(true);
             else setConfirming(true);
           }}
         />
-        {showLabel && (
-          <Label htmlFor={id}>{flag.enabled ? "Live" : "Killed"}</Label>
-        )}
+        <Label htmlFor={id}>{flag.enabled ? "Live" : "Killed"}</Label>
       </div>
 
       <AlertDialog open={confirming} onOpenChange={setConfirming}>

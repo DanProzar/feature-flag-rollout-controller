@@ -24,18 +24,22 @@ import { flagSavedToast } from "@/lib/toast-messages";
 
 /**
  * Creates or edits a flag through `PUT /api/flags/:key`. On edit the key is read-only and the kill
- * state is left to the kill switch; the page remounts this form whenever the stored flag changes,
- * so a save never sends a stale `enabled`. On create the percentage follows the include cohorts
- * (100%, or 0% once `user` is included; see `withIncludeCohorts`) and saving returns to the list.
+ * state is left to the kill switch: the form sends the stored `enabled` it is given, so flipping
+ * the kill switch neither remounts the form (unsaved rule edits survive) nor gets undone by the
+ * next save. On create the percentage follows the include cohorts (100%, or 0% once `user` is
+ * included; see `withIncludeCohorts`) and saving returns to the list.
  */
 export function FlagForm({
   mode,
   initial,
+  enabled,
   existingKeys,
   cohorts,
 }: {
   mode: "create" | "edit";
   initial: FlagFormValues;
+  /** Edit only: the stored kill state, sent with the rules instead of `initial.enabled`. */
+  enabled?: boolean;
   existingKeys: string[];
   cohorts: CohortOption[];
 }) {
@@ -64,7 +68,8 @@ export function FlagForm({
     if (!check.valid) return;
 
     setSaving(true);
-    const result = await putFlag(values.key, formToPutBody(values), null);
+    const sent = enabled === undefined ? values : { ...values, enabled };
+    const result = await putFlag(values.key, formToPutBody(sent), null);
     setSaving(false);
     if (!result.ok) {
       setErrors(issuesToFieldErrors(result.issues));
@@ -72,7 +77,12 @@ export function FlagForm({
       return;
     }
     showSuccessToast(
-      flagSavedToast(mode === "create" ? null : initial, result.flag),
+      flagSavedToast(
+        mode === "create"
+          ? null
+          : { ...initial, enabled: enabled ?? initial.enabled },
+        result.flag,
+      ),
     );
     startNavigation(() => {
       if (mode === "create") router.push("/");
