@@ -271,6 +271,34 @@ Successful changes show a toast with the details (e.g. `percentage: 10% → 25%`
 red Alert where the action happened. In the dev stack the header has a **Reset** button that calls
 `POST /api/test/reset` after a confirmation.
 
+## Demo page
+
+`/demo` (header link **Demo**) behaves like a client application: for the user picked in
+**Acting as** it calls `POST /api/flags/:key/evaluate` from the browser — once per stored flag, in
+parallel, with `X-User-Id` and the user's stored cohorts — and shows each answer in a grid (flag,
+on/off, reason) next to a mock "Acme Store" whose features follow five seed flags:
+
+| Flag            | On                         | Off (legacy)                         |
+| --------------- | -------------------------- | ------------------------------------ |
+| `new-checkout`  | one-page checkout          | classic cart → shipping → payment    |
+| `dark-mode`     | dark storefront card       | light storefront card                |
+| `beta-search`   | search bar in the header   | category menu                        |
+| `legacy-banner` | promo banner               | no banner                            |
+| `ai-assistant`  | "Ask our assistant" bubble | "Contact support" link in the footer |
+
+A failed or missing flag counts as off; with every feature off the store is the complete legacy
+layout, badged `Legacy storefront`. Other flags appear in the grid only.
+
+Walkthrough on a fresh seed: pick **Frank** (every seed flag off → legacy store), then **Bob**
+(new checkout, dark mode, search, assistant). Kill `beta-search` in the admin and press
+**Refresh** as Bob: the row reads `off · KILL_SWITCH` and the search bar turns back into the menu.
+Cohorts are changed on `/users`, not on `/demo`.
+
+Evaluating sticky flags from `/demo` stores assignments exactly as any client would (Refresh then
+reports `STICKY`). The selected user is remembered in an `httpOnly` session cookie
+(`ff_demo_user`, path `/demo`), set by a Server Function, never in browser storage; it is gone when
+the browser closes, and an unknown id falls back to the first user.
+
 ## Troubleshooting
 
 - **Port 3000 or 27017 already in use** — stop whatever holds it (another dev server, a local
