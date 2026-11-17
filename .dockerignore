@@ -1,7 +1,14 @@
 node_modules
 .next
 .git
+.claude
+.vscode
+.idea
 specs
+coverage
+tsconfig.tsbuildinfo
+next-env.d.ts
+*.md
 .env*
 !.env.example
 npm-debug.log*
