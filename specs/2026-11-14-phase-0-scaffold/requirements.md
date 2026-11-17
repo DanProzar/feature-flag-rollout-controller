@@ -2,6 +2,8 @@
 
 Branch: `feature/phase-0-scaffold`
 Roadmap: `specs/roadmap.md` → Phase 0, items 1–3.
+Status: ✅ Complete — merged 2026-11-14. Historical record, frozen at merge; the current truth is `specs/mission.md` and `specs/tech-stack.md`. Later changes: the Dockerfile gained a `seed`
+stage (Phase 2) and cache mounts (Phase 7).
 
 ## Context
 
@@ -12,7 +14,7 @@ nothing functional. It only proves that the toolchain works end to end.
 
 ## Scope
 
-Strictly roadmap items 1–3:
+Roadmap items 1–3, plus the UI framework follow-up (item 4 below):
 
 1. **Next.js + TypeScript project**
    - Next.js (App Router, latest stable), TypeScript in `strict` mode, `src/` directory layout.
@@ -32,6 +34,9 @@ Strictly roadmap items 1–3:
    - The app serves a placeholder page at `/`.
    - Env vars from `tech-stack.md` (`MONGODB_URI`, `MONGODB_DB`, `ENABLE_TEST_ENDPOINTS`) are declared
      in compose and in a `.env.example`. Nothing reads them yet.
+4. **UI framework (follow-up)**
+   - Tailwind CSS v4 via PostCSS and shadcn/ui initialised (`components.json`, `src/lib/utils.ts`,
+     theme tokens in `src/app/globals.css`). Only the CLI's default `button` component is added.
 
 ## Decisions
 
@@ -43,10 +48,6 @@ Strictly roadmap items 1–3:
 | Docker image | **Both**: a production standalone image by default, plus a dev override with hot reload | `docker compose up` runs the real system. `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` is for iterating. |
 | Placeholder page | A minimal page that names the product. No UI work. | Phase 4 owns the UI. |
 | UI framework | **shadcn/ui** (`base-nova` preset) on **Tailwind CSS v4**, initialised in this phase. Originally scaffolded without Tailwind; added as a follow-up. | Copy-in components we own and can edit, accessible primitives, and a consistent theme via CSS variables. Setting it up now keeps Phase 4 focused on screens. |
-
-4. **UI framework (follow-up)**
-   - Tailwind CSS v4 via PostCSS and shadcn/ui initialised (`components.json`, `src/lib/utils.ts`,
-     theme tokens in `src/app/globals.css`). Only the CLI's default `button` component is added.
 
 ## Out of scope
 

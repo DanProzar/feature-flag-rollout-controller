@@ -13,7 +13,8 @@ instead of the next one.
 ## 1. Gather context
 
 1. Read `specs/roadmap.md` and pick the first phase not marked `✅ Complete` (or the one named in
-   `$ARGUMENTS`). Note its title and item numbers.
+   `$ARGUMENTS`). Note its title and item numbers. If every phase is complete, ask the user what
+   the next phase is and add it to the roadmap (see step 2).
 2. Read `specs/mission.md` and `specs/tech-stack.md` — the spec must stay consistent with the
    mission's principles and the chosen stack.
 3. Skim the most recent `specs/YYYY-MM-DD-*/` directory to match its tone, structure and level of
@@ -24,8 +25,13 @@ instead of the next one.
 ## 2. Create the branch
 
 Create `feature/<feature-name>` from an up-to-date `main`, where `<feature-name>` is a short
-kebab-case slug of the phase (e.g. `phase-2-persistence`). If the branch already exists, ask the
-user whether to reuse it rather than overwrite anything.
+kebab-case slug of the phase (e.g. `phase-2-persistence`). For fixes, polish or refactors use
+`fix/<slug>` instead. If the branch already exists, ask the user whether to reuse it rather than
+overwrite anything.
+
+Work that is not on the roadmap yet (a polish pass, a review's follow-ups) gets a roadmap entry
+first: a new `## Phase N — <title>` with the next item numbers, or numbered follow-ups under the
+phase it extends. Every spec traces back to roadmap items.
 
 ## 3. Interview the user — before writing anything
 
@@ -49,9 +55,12 @@ Create `specs/YYYY-MM-DD-<feature-name>/` using today's date, containing:
 
 ### `requirements.md` — scope, decisions, context
 
-- Title `# <Phase title>: Requirements`, then the branch name and the roadmap phase/items covered.
+- Title `# <Phase title>: Requirements`, then the branch name, the roadmap phase/items covered and
+  `Status: In progress` (set to `✅ Complete` when the phase is done; at merge the line also
+  notes the merge date, and later phases append what they superseded).
 - **Context**: why this phase now, what earlier phases delivered, how it ties to the mission.
-- **Scope**: what will be built, concretely (files, types, endpoints, behaviours).
+- **Scope**: what will be built, concretely (files, types, endpoints, behaviours). Give each
+  requirement a stable ID `R<phase>.<n>` (e.g. `R7.3`) and cite its roadmap item.
 - **Out of scope**: what is deliberately deferred.
 - **Decisions**: each decision from the interview, with its reasoning.
 
@@ -59,13 +68,21 @@ Create `specs/YYYY-MM-DD-<feature-name>/` using today's date, containing:
 
 - Title `# <Phase title>: Plan`.
 - A series of `## N. <Group name>` sections, each with numbered steps. Reference roadmap item
-  numbers where relevant. Each group should end in a working, committable state.
+  numbers and requirement IDs. Each group should end in a working, committable state.
+- The last group always updates `specs/mission.md`, `specs/tech-stack.md` (they stay the current
+  source of truth) and `specs/roadmap.md` (phase marked `✅ Complete`, linked to its spec
+  directory), ticks `validation.md`, and runs the changelog skill.
 
 ### `validation.md` — how to know it can be merged
 
 - Title `# <Phase title>: Validation`.
-- Exact commands to run and their expected result, required tests as a `- [ ]` checklist, and any
-  manual checks. Every item should be objectively checkable.
+- Exact commands to run and their expected result (the standard block: `npm ci`, `lint`,
+  `typecheck`, `format:check`, `test`, `test:all`, `test:coverage`, `build`), required tests as a
+  `- [ ]` checklist with IDs `V<phase>.<n> (R<phase>.<n>)` naming the test file, and any manual
+  checks. Every item should be objectively checkable. Tick only what was actually run.
+
+Dated spec directories are historical records: once a phase is merged, don't rewrite them. Record
+later changes in the roadmap (follow-ups or a new phase) and in the top-level specs.
 
 ## 5. Finish
 

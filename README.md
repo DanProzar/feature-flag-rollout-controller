@@ -3,7 +3,7 @@
 A small service and admin UI for rolling features out safely, without a deploy:
 
 - **Percentage rollout** — turn a flag on for N% of users through stable, hash-based bucketing.
-- **Cohort include / exclude** — force a flag on or off for named cohorts (`beta`, `admin`, …).
+- **Cohort include / exclude** — force a flag on or off for named cohorts (`tester`, `admin`, …).
 - **Kill switch** — force a flag off for everyone, instantly, overriding every other rule.
 - **Sticky assignments** — per flag, remember each user's first percentage result so later
   percentage changes never flip users who were already assigned.
@@ -258,6 +258,11 @@ curl -X PUT http://localhost:3000/api/flags/broken \
 400 {"error":"Invalid request body","issues":{"percentage":["Too big: expected number to be <=100"],"sticky":["Invalid input: expected boolean, received undefined"]}}
 ```
 
+Limits: `userId`, each cohort and `X-User-Id` hold at most 200 characters (after trimming), and a
+cohort list at most 100 distinct entries. Other `400`s are `Invalid JSON`, `Invalid flag key`,
+`Invalid user id` (`:userId` must be a UUID) and `Invalid X-User-Id header`. A valid JSON body
+that is not an object reports its problem under `issues.body`.
+
 ## Admin UI
 
 | Page           | What it does                                                                                                                          |
@@ -305,12 +310,11 @@ the browser closes, and an unknown id falls back to the first user.
   `mongod`), or change the host side of the port mapping.
 - **Integration tests fail to connect** — MongoDB's port is only exposed by the dev override: start
   it with `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d mongo`.
-- **`npm run build` fails or breaks the running app** — the dev compose `app` bind-mounts the
-  project and shares `.next`. Stop it first: `docker compose -f docker-compose.yml -f
-docker-compose.dev.yml stop app`.
-- **`next dev` says another instance is running / `.next/dev` is locked** — a leftover host
-  `npm run dev` is still running; stop that Node process before starting the compose `app` (or
-  vice versa).
+- **Host `npm run dev` and the dev `app` container** — the container keeps its own `.next` (an
+  anonymous volume), so a host `npm run build` no longer disturbs it, but both dev servers want
+  port 3000: stop one before starting the other. A container created before this change still
+  shares `.next`; recreate it once with
+  `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --renew-anon-volumes app`.
 - **Server-side changes don't show up in the dev `app` container** — services and the MongoDB
   connection are cached on `globalThis` across hot reloads. Restart it:
   `docker restart feature-flags-app-1`.

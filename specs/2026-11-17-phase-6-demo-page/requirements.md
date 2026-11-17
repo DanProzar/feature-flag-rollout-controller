@@ -2,6 +2,10 @@
 
 Branch: `feature/phase-6-demo-page`
 Roadmap: `specs/roadmap.md` → Phase 6, items 35–37.
+Status: ✅ Complete — merged 2026-11-17. Historical record, frozen at merge; the current truth is `specs/mission.md` and `specs/tech-stack.md`. Later changes at merge: the storefront became
+interactive and the `/users` link beside the switcher was dropped (§2, §4, roadmap item 37
+follow-ups); runs follow fresh props and the storefront shows a skeleton until the first run
+(Phase 7).
 
 ## Context
 
@@ -177,7 +181,7 @@ a still-loading row) shows its **legacy** variant:
 2. **One control for user and actor** — reusing `ActorSelect` gives the dormant "Acting as" control
    a purpose and matches how a real client sends the end user's id as `X-User-Id`. No "Anonymous"
    on `/demo`, since evaluation needs a `userId`.
-2a. **`httpOnly` session cookie instead of `localStorage`** (review of 2026-11-17) — Web Storage is
+   **2a. `httpOnly` session cookie instead of `localStorage`** (review of 2026-11-17) — Web Storage is
    readable and writable by any script on the origin and never expires, so it is no place for a
    value that decides request attribution. A server-set `HttpOnly; Secure; SameSite=Strict;
    Path=/demo` session cookie, written only by a validating Server Function, is out of reach of

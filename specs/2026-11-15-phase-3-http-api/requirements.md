@@ -2,6 +2,9 @@
 
 Branch: `feature/phase-3-http-api`
 Roadmap: `specs/roadmap.md` → Phase 3, items 21–27.
+Status: ✅ Complete — merged 2026-11-15. Historical record, frozen at merge; the current truth is `specs/mission.md` and `specs/tech-stack.md`. Later changes: the reset no longer freezes the
+clock (Phase 5 §9); `DELETE /api/flags/:key` and the users route were added (Phase 4); request
+limits, `issues.body` and the evaluate read order changed (Phase 7).
 
 ## Context
 

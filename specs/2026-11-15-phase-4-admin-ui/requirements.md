@@ -3,6 +3,8 @@
 Branch: `feature/phase-4-admin-ui`
 Roadmap: `specs/roadmap.md` → Phase 4, items 28–32, plus the review follow-ups (see
 [Review changes](#review-changes-2026-11-16)).
+Status: ✅ Complete — merged 2026-11-16. Historical record, frozen at merge; the current truth is `specs/mission.md` and `specs/tech-stack.md`. Later changes: `src/lib/actor.ts` was replaced by
+a cookie (Phase 6); the kill switch, Try it and form accessibility were reworked (Phase 7).
 
 ## Context
 

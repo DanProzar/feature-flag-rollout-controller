@@ -2,7 +2,7 @@
 
 Branch: `fix/polish`
 Roadmap: `specs/roadmap.md` → Phase 7, items 38–43.
-Status: In progress
+Status: ✅ Complete
 
 ## Context
 

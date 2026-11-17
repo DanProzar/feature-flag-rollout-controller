@@ -2,6 +2,7 @@
 
 Branch: `feature/phase-1-evaluator`
 Roadmap: `specs/roadmap.md` → Phase 1, items 4–13.
+Status: ✅ Complete — merged 2026-11-15. Historical record, frozen at merge; the current truth is `specs/mission.md` and `specs/tech-stack.md`. Not superseded.
 
 ## Context
 

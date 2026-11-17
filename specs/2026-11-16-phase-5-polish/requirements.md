@@ -4,6 +4,7 @@ Branch: `feature/phase-5-polish`
 Roadmap: `specs/roadmap.md` → Phase 5, items 33–34 (including the "Rollout rules" save alert
 deferred from Phase 4, review item 10), plus the spec-review follow-ups of 2026-11-16: a white-only
 theme and a header **Reset** button, with reset no longer freezing the clock (§9–§10).
+Status: ✅ Complete — merged 2026-11-16 together with Phase 4. Historical record, frozen at merge; the current truth is `specs/mission.md` and `specs/tech-stack.md`. Not superseded.
 
 ## Context
 

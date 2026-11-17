@@ -3,6 +3,9 @@
 Branch: `feature/phase-2-persistence`
 Roadmap: `specs/roadmap.md` → Phase 2, items 14–20 (item 20 extended with users and cohorts
 repositories and seeded cohorts and flags, see "Decisions").
+Status: ✅ Complete — merged 2026-11-15. Historical record, frozen at merge; the current truth is `specs/mission.md` and `specs/tech-stack.md`. Later changes: audit `after` became nullable
+for deletes (Phase 4); the audit index became `{ key, at, _id }` and the assignments fallback
+tolerates a removed winner (Phase 7).
 
 ## Context
 
@@ -40,9 +43,8 @@ All code lives in `src/data`; tests in `src/data/tests/*.int.test.ts` (integrati
      - `cohorts`: unique `{ key: 1 }`
 4. **Document schemas** (`src/data/schemas.ts`)
    - Zod schemas for every stored document (`flags`, `assignments`, `audit`, `users`, `cohorts`).
-     Every
-     document read from MongoDB is parsed with them before being returned; a malformed document
-     throws.
+     Every document read from MongoDB is parsed with them before being returned; a malformed
+     document throws.
 5. **Flags repository** (`src/data/flags.ts`, item 15) — `createFlagsRepository(db, clock)`:
    - `get(key): Promise<Flag | null>` — domain `Flag` (the six mission fields), storage metadata
      stripped.

@@ -40,31 +40,31 @@ grep -L '^Status:' specs/2026-*/requirements.md  # no output
 
 ## Required tests
 
-- [ ] V7.1 (R7.1) `src/server/tests/flags.int.test.ts`: an assignment stored after a delete is
+- [x] V7.1 (R7.1) `src/server/tests/flags.int.test.ts`: an assignment stored after a delete is
       gone when the flag is re-created, and the first evaluation answers `PERCENTAGE`.
-- [ ] V7.2 (R7.2) `src/data/tests/assignments.int.test.ts`: the duplicate-key fallback answers the
+- [x] V7.2 (R7.2) `src/data/tests/assignments.int.test.ts`: the duplicate-key fallback answers the
       caller's value when the winner was removed.
-- [ ] V7.3 (R7.3) `src/server/tests/flags.int.test.ts`: killed, excluded and included sticky
+- [x] V7.3 (R7.3) `src/server/tests/flags.int.test.ts`: killed, excluded and included sticky
       evaluations never call `assignments.get`; existing sticky, race and override tests pass
       unchanged.
-- [ ] V7.4 (R7.4) `src/data/tests/indexes.int.test.ts`: the audit index is
+- [x] V7.4 (R7.4) `src/data/tests/indexes.int.test.ts`: the audit index is
       `{ key: 1, at: 1, _id: 1 }`.
-- [ ] V7.5 (R7.5) `src/server/tests/schemas.test.ts`:
+- [x] V7.5 (R7.5) `src/server/tests/schemas.test.ts`:
       - a 200-character `userId` or cohort passes and 201 fails;
       - 100 distinct cohorts pass and 101 fail;
       - 101 entries that de-duplicate to 100 pass.
-- [ ] V7.5b (R7.5) `src/server/tests/http.test.ts`: `actorIdFrom` rejects a 201-character header
+- [x] V7.5b (R7.5) `src/server/tests/http.test.ts`: `actorIdFrom` rejects a 201-character header
       and accepts 200.
-- [ ] V7.6 (R7.6) `src/server/tests/http.test.ts`: a JSON string, `null` and an array body give
+- [x] V7.6 (R7.6) `src/server/tests/http.test.ts`: a JSON string, `null` and an array body give
       `issues.body`.
-- [ ] V7.7 (R7.7) `src/app/api/tests/users.int.test.ts`: `PUT /api/users/not-a-uuid/cohorts`
+- [x] V7.7 (R7.7) `src/app/api/tests/users.int.test.ts`: `PUT /api/users/not-a-uuid/cohorts`
       answers 400 `Invalid user id`; an unknown, well-formed UUID still answers 404.
-- [ ] V7.8 (R7.8) `src/server/tests/catalog.int.test.ts` and `demo.int.test.ts`: `catalog.user`
+- [x] V7.8 (R7.8) `src/server/tests/catalog.int.test.ts` and `demo.int.test.ts`: `catalog.user`
       returns the user or `null`; `selectDemoUser` behaves as before.
 
 ## Manual checks (dev stack, browser)
 
-- [ ] V7.13 (R7.13) On `/flags/new-checkout`:
+- [x] V7.13 (R7.13) On `/flags/new-checkout`:
       1. Change the percentage without saving.
       2. Kill the flag with the header switch: the unsaved percentage is still in the form.
       3. Save: the flag stays killed, and History shows only the percentage change.
@@ -73,7 +73,7 @@ grep -L '^Status:' specs/2026-*/requirements.md  # no output
 - [ ] V7.15 (R7.15) Try it with "Slow 3G":
       1. Press Evaluate.
       2. Switch the user before the answer arrives: no result is shown for the new user.
-- [ ] V7.16 (R7.16) `/demo` open in tab A; create a flag in tab B. In tab A, switch user: the new
+- [x] V7.16 (R7.16) `/demo` open in tab A; create a flag in tab B. In tab A, switch user: the new
       flag's row gets an answer (no stuck skeleton).
 - [ ] V7.17 (R7.17) A hard reload of `/demo` never shows the `Legacy storefront` badge for a user
       with any feature on.
@@ -81,13 +81,13 @@ grep -L '^Status:' specs/2026-*/requirements.md  # no output
       - On `/users`, remove and re-add the same cohort: Save stays disabled.
       - Drag-selecting a flag key in the list does not open the flag.
       - Reset from `/users` lands on `/`.
-- [ ] V7.19 (R7.19) Browser tabs read `Flags · Feature flags`, `Users · Feature flags`,
+- [x] V7.19 (R7.19) Browser tabs read `Flags · Feature flags`, `Users · Feature flags`,
       `New flag · Feature flags`, `new-checkout · Feature flags`, `Demo · Feature flags`, and
       `Not found · Feature flags` for an unknown URL.
-- [ ] V7.20 (R7.20) Creating a flag with an invalid key moves focus to the Key input; a screen
+- [x] V7.20 (R7.20) Creating a flag with an invalid key moves focus to the Key input; a screen
       reader (or the Accessibility tree in DevTools) announces the error as the input's
       description.
-- [ ] V7.22 (R7.22) The DevTools Accessibility tree of `/flags/new-checkout` shows h1 (the key)
+- [x] V7.22 (R7.22) The DevTools Accessibility tree of `/flags/new-checkout` shows h1 (the key)
       and h2 Rollout rules, Try it and History.
 - [ ] V7.26 (R7.26) At 375 px wide, `/` shows Key, State, Rollout and the delete button without
       horizontal scrolling inside the table.
@@ -99,4 +99,24 @@ grep -L '^Status:' specs/2026-*/requirements.md  # no output
 - [ ] All commands above pass and every checkbox is ticked.
 - [ ] `specs/roadmap.md` Phase 7 is marked `✅ Complete`; `mission.md`, `tech-stack.md` and
       `README.md` are updated; `CHANGELOG.md` has this branch's entries.
-- [ ] No HTTP contract change beyond R7.5–R7.7.
+- [x] No HTTP contract change beyond R7.5–R7.7.
+
+## Result (2026-11-17, branch `fix/polish`)
+
+- Commands: `lint`, `typecheck`, `format:check`, `test:coverage` (463 tests; 100% statements,
+  branches, functions and lines) and `build` pass; `docker compose build` succeeds and the `seed`
+  container runs as `node`. Every boundary check prints nothing. `npm ci` on a clean checkout was
+  not re-run.
+- Required tests V7.1–V7.8 pass.
+- Manual checks were run against `next start` on the host with the compose `mongo`:
+  - V7.13: percentage 30 survived a kill; Save kept `enabled: false` and audited 50 → 30.
+  - V7.16: a flag created via the API was evaluated after switching to Bob.
+  - V7.19: the server-rendered `<title>` was checked for all six pages.
+  - V7.20: focus moved to the key input, which carried `aria-describedby="flag-key-error"` with
+    `role="alert"`.
+  - V7.22: the h2 headings are Rollout rules, Try it and History.
+- **Still open:**
+  - V7.14, V7.15, V7.17 and V7.18 need throttling or manual interaction.
+  - V7.26: the browser window could not be resized for this check.
+  - V7.10 needs the dev stack running.
+  - These must be ticked before merging.

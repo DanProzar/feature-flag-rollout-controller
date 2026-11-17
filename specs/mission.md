@@ -15,7 +15,7 @@ answer.
 - **Client applications** — call `POST /api/flags/:key/evaluate` with `{ userId, cohorts }`.
 - **Auditors / on-call** — read a flag's change history (who changed what, when, before/after).
 
-## Core capabilities (from README input)
+## Core capabilities
 
 1. **Percentage rollout** — enable a flag for N% of users via stable hash-based bucketing.
 2. **Cohort include/exclude** — force a flag on for included cohorts, off for excluded cohorts.
@@ -23,6 +23,11 @@ answer.
 4. **Sticky assignments** — per-flag opt-in (`sticky: true`): a user's first percentage-based result
    for a flag is persisted and reused, so later percentage changes never flip users who were already
    assigned.
+5. **Audited changes** — every create, update and delete of a flag is recorded with its actor.
+
+Around them: an admin UI (flags list, create/edit with "Try it", per-flag history, a `/users` page
+to edit the seeded users' cohorts) and a `/demo` page that behaves like a client application,
+showing every flag's answer for a seeded user next to a mock storefront.
 
 ## Flag
 
@@ -65,8 +70,7 @@ Notes:
 ## Audit trail
 
 Every flag upsert or delete appends an audit entry `{ at, key, actorId, before, after }` (`before`
-is `null` on create, `after` is `null` on delete). `actorId` comes
-from the optional `X-User-Id` request header and is `null` when the header is absent. The log is
+is `null` on create, `after` is `null` on delete). `actorId` comes from the optional `X-User-Id` request header and is `null` when the header is absent. The log is
 append-only, readable per flag, and survives the test reset.
 
 ## Principles
@@ -82,5 +86,22 @@ append-only, readable per flag, and survives the test reset.
 - **Streaming SDK** — clients call the plain HTTP API; no push or long-lived connections.
 - **Experimentation statistics** — no A/B analysis, exposure metrics or significance testing.
 
-Also out of scope for now: multivariate (non-boolean) flags, authentication/RBAC (`X-User-Id` is
-trusted as-is, for attribution only), and deleting flags.
+Also out of scope for now: multivariate (non-boolean) flags, and authentication/RBAC (`X-User-Id`
+is trusted as-is, for attribution only).
+
+## Glossary
+
+| Term | Meaning |
+|------|---------|
+| **Flag** | A named boolean feature switch with rollout rules (see [Flag](#flag)) |
+| **`enabled`** | On a flag: `false` means the kill switch is on (UI: *Killed*; `true` is *Live*). In an evaluation answer: whether the feature is on for that user. The two are different things |
+| **Kill switch** | Setting a flag's `enabled` to `false`; every evaluation then answers `false` / `KILL_SWITCH` |
+| **Evaluation** | Answering "is flag X on for user Y?" with `{ enabled, reason }` |
+| **Reason** | The rule that decided an evaluation: `FLAG_NOT_FOUND`, `KILL_SWITCH`, `COHORT_EXCLUDED`, `COHORT_INCLUDED`, `STICKY` or `PERCENTAGE` |
+| **Bucket** | A user's fixed position `0..99` for one flag: `crc32(flagKey:userId) % 100` |
+| **Cohort** | A group key a user belongs to (e.g. `tester`). The `cohorts` collection is a catalogue for UIs; flags and users may use any key |
+| **Sticky** / **assignment** | A sticky flag stores each user's first percentage answer (the *assignment*) and reuses it |
+| **Actor** | Who made a change: the `X-User-Id` request header, recorded as `actorId` (or `null`) |
+| **Seed** | The demo cohorts, users and flags `npm run seed` inserts into empty collections |
+| **Reset** | The dev-only `POST /api/test/reset`: deletes flags and assignments; keeps audit, users and cohorts |
+| **Legacy variant** | On `/demo`, what a storefront slot shows while its flag is off (the existing behaviour) |
