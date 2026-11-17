@@ -36,7 +36,9 @@ export function AuditHistory({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>History</CardTitle>
+        <CardTitle>
+          <h2>History</h2>
+        </CardTitle>
         <CardDescription>
           Every change to this flag, newest first.
         </CardDescription>

@@ -7,21 +7,16 @@ import { ErrorAlert } from "@/components/error-alert";
 import { PendingButton } from "@/components/pending-button";
 import { showSuccessToast } from "@/components/success-toast";
 import { TableCell, TableRow } from "@/components/ui/table";
+import type { UserOption } from "@/components/user-select";
 import { setUserCohorts } from "@/lib/api-client";
 import { userCohortsToast } from "@/lib/toast-messages";
-
-export interface UserRowData {
-  userId: string;
-  name: string;
-  cohorts: string[];
-}
 
 /** One user with an editable cohort list, saved via `PUT /api/users/:userId/cohorts`. */
 export function UserCohortsRow({
   user,
   cohorts,
 }: {
-  user: UserRowData;
+  user: UserOption;
   cohorts: CohortOption[];
 }) {
   const router = useRouter();
@@ -55,7 +50,7 @@ export function UserCohortsRow({
       <TableCell className="pt-3.5 font-medium">
         <label htmlFor={inputId}>{user.name}</label>
       </TableCell>
-      <TableCell className="pt-3.5 font-mono text-xs text-muted-foreground">
+      <TableCell className="hidden pt-3.5 font-mono text-xs text-muted-foreground md:table-cell">
         {user.userId}
       </TableCell>
       <TableCell className="whitespace-normal">

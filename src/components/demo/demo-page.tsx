@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCw, Users } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import {
   useEffect,
   useEffectEvent,
@@ -9,20 +9,15 @@ import {
   useTransition,
 } from "react";
 import { selectDemoUser } from "@/app/demo/actions";
-import { type ActorOption, ActorSelect } from "@/components/actor-select";
+import { ActorSelect } from "@/components/actor-select";
 import { FlagGrid } from "@/components/demo/flag-grid";
 import { Storefront } from "@/components/demo/storefront";
 import { ErrorAlert } from "@/components/error-alert";
 import { CohortBadges } from "@/components/flag-badges";
+import { NoUsersEmpty } from "@/components/no-users-empty";
 import { PendingButton } from "@/components/pending-button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import type { UserOption } from "@/components/user-select";
 import { evaluateFlag } from "@/lib/api-client";
 import {
   type DemoEvaluation,
@@ -48,7 +43,7 @@ export function DemoPage({
   selectedUserId,
 }: {
   flags: { key: string }[];
-  users: ActorOption[];
+  users: UserOption[];
   selectedUserId: string | null;
 }) {
   const [userId, setUserId] = useState(selectedUserId);
@@ -68,7 +63,7 @@ export function DemoPage({
   const firstRunDone = results.run !== -1;
   const pending = user !== null && results.run !== run;
 
-  function start(target: ActorOption) {
+  function start(target: UserOption) {
     const forRun = ++runRef.current;
     startedForRef.current = inputs;
     setRun(forRun);
@@ -113,18 +108,7 @@ export function DemoPage({
       </div>
 
       {user === null ? (
-        <Empty className="border">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Users />
-            </EmptyMedia>
-            <EmptyTitle>No users</EmptyTitle>
-            <EmptyDescription>
-              Run <code className="font-mono">npm run seed</code> to add the
-              demo users.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <NoUsersEmpty />
       ) : (
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">

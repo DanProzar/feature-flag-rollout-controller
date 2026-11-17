@@ -22,6 +22,19 @@ import {
 } from "@/lib/flag-form";
 import { flagSavedToast } from "@/lib/toast-messages";
 
+/** The control of each form field that can have errors, in form order: focus goes to the first. */
+const FIELD_CONTROLS: [keyof FieldErrors, string][] = [
+  ["key", "flag-key"],
+  ["percentage", "flag-percentage"],
+  ["includeCohorts", "flag-include"],
+  ["excludeCohorts", "flag-exclude"],
+];
+
+function focusFirstError(errors: FieldErrors) {
+  const first = FIELD_CONTROLS.find(([field]) => errors[field]);
+  if (first) document.getElementById(first[1])?.focus();
+}
+
 /**
  * Creates or edits a flag through `PUT /api/flags/:key`. On edit the key is read-only and the kill
  * state is left to the kill switch: the form sends the stored `enabled` it is given, so flipping
@@ -65,15 +78,20 @@ export function FlagForm({
     setFailure(null);
     const check = validateFlagForm(values, existingKeys, mode);
     setErrors(check.errors);
-    if (!check.valid) return;
+    if (!check.valid) {
+      focusFirstError(check.errors);
+      return;
+    }
 
     setSaving(true);
     const sent = enabled === undefined ? values : { ...values, enabled };
     const result = await putFlag(values.key, formToPutBody(sent), null);
     setSaving(false);
     if (!result.ok) {
-      setErrors(issuesToFieldErrors(result.issues));
+      const fieldErrors = issuesToFieldErrors(result.issues);
+      setErrors(fieldErrors);
       setFailure(result.error);
+      focusFirstError(fieldErrors);
       return;
     }
     showSuccessToast(
@@ -93,15 +111,18 @@ export function FlagForm({
   return (
     <form onSubmit={submit} className="space-y-6" noValidate>
       <Field id="flag-key" label="Key" errors={errors.key}>
-        <Input
-          id="flag-key"
-          value={values.key}
-          readOnly={mode === "edit"}
-          placeholder="e.g. new-checkout"
-          autoComplete="off"
-          aria-invalid={errors.key ? true : undefined}
-          onChange={(event) => set("key", event.target.value)}
-        />
+        {(describedBy) => (
+          <Input
+            id="flag-key"
+            aria-describedby={describedBy}
+            value={values.key}
+            readOnly={mode === "edit"}
+            placeholder="e.g. new-checkout"
+            autoComplete="off"
+            aria-invalid={errors.key ? true : undefined}
+            onChange={(event) => set("key", event.target.value)}
+          />
+        )}
       </Field>
 
       {mode === "create" && (
@@ -119,29 +140,36 @@ export function FlagForm({
         label="Rollout percentage"
         errors={errors.percentage}
       >
-        <div className="flex items-center gap-4">
-          <Slider
-            aria-label="Rollout percentage"
-            min={0}
-            max={100}
-            step={1}
-            value={[Number.isFinite(values.percentage) ? values.percentage : 0]}
-            onValueChange={(value) =>
-              set("percentage", Array.isArray(value) ? value[0] : value)
-            }
-          />
-          <Input
-            id="flag-percentage"
-            type="number"
-            min={0}
-            max={100}
-            step={1}
-            className="w-20 tabular-nums"
-            value={Number.isNaN(values.percentage) ? "" : values.percentage}
-            aria-invalid={errors.percentage ? true : undefined}
-            onChange={(event) => set("percentage", event.target.valueAsNumber)}
-          />
-        </div>
+        {(describedBy) => (
+          <div className="flex items-center gap-4">
+            <Slider
+              aria-label="Rollout percentage"
+              min={0}
+              max={100}
+              step={1}
+              value={[
+                Number.isFinite(values.percentage) ? values.percentage : 0,
+              ]}
+              onValueChange={(value) =>
+                set("percentage", Array.isArray(value) ? value[0] : value)
+              }
+            />
+            <Input
+              id="flag-percentage"
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              className="w-20 tabular-nums"
+              value={Number.isNaN(values.percentage) ? "" : values.percentage}
+              aria-invalid={errors.percentage ? true : undefined}
+              aria-describedby={describedBy}
+              onChange={(event) =>
+                set("percentage", event.target.valueAsNumber)
+              }
+            />
+          </div>
+        )}
       </Field>
 
       <Field
@@ -154,17 +182,20 @@ export function FlagForm({
         }
         errors={errors.includeCohorts}
       >
-        <CohortEditor
-          id="flag-include"
-          value={values.includeCohorts}
-          onChange={(next) =>
-            mode === "create"
-              ? setValues((current) => withIncludeCohorts(current, next))
-              : set("includeCohorts", next)
-          }
-          catalogue={cohorts}
-          invalid={!!errors.includeCohorts}
-        />
+        {(describedBy) => (
+          <CohortEditor
+            id="flag-include"
+            describedBy={describedBy}
+            value={values.includeCohorts}
+            onChange={(next) =>
+              mode === "create"
+                ? setValues((current) => withIncludeCohorts(current, next))
+                : set("includeCohorts", next)
+            }
+            catalogue={cohorts}
+            invalid={!!errors.includeCohorts}
+          />
+        )}
       </Field>
 
       <Field
@@ -174,13 +205,16 @@ export function FlagForm({
         errors={errors.excludeCohorts}
         warnings={warnings.excludeCohorts}
       >
-        <CohortEditor
-          id="flag-exclude"
-          value={values.excludeCohorts}
-          onChange={(next) => set("excludeCohorts", next)}
-          catalogue={cohorts}
-          invalid={!!errors.excludeCohorts}
-        />
+        {(describedBy) => (
+          <CohortEditor
+            id="flag-exclude"
+            describedBy={describedBy}
+            value={values.excludeCohorts}
+            onChange={(next) => set("excludeCohorts", next)}
+            catalogue={cohorts}
+            invalid={!!errors.excludeCohorts}
+          />
+        )}
       </Field>
 
       <SwitchField
@@ -209,6 +243,10 @@ export function FlagForm({
   );
 }
 
+/**
+ * A labelled form field. Its hint, errors and warnings get ids, and `children` receives them as
+ * the value for the control's `aria-describedby`; errors are announced as they appear.
+ */
 function Field({
   id,
   label,
@@ -222,23 +260,44 @@ function Field({
   hint?: string;
   errors?: string[];
   warnings?: string[];
-  children: ReactNode;
+  children(describedBy: string | undefined): ReactNode;
 }) {
+  const describedBy =
+    [
+      hint && `${id}-hint`,
+      errors?.length && `${id}-error`,
+      warnings?.length && `${id}-warning`,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
+
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      {hint && <p className="text-sm text-muted-foreground">{hint}</p>}
-      {children}
-      {errors?.map((message) => (
-        <p key={message} className="text-sm text-destructive">
-          {message}
+      {hint && (
+        <p id={`${id}-hint`} className="text-sm text-muted-foreground">
+          {hint}
         </p>
-      ))}
-      {warnings?.map((message) => (
-        <p key={message} className="text-sm text-amber-600">
-          {message}
-        </p>
-      ))}
+      )}
+      {children(describedBy)}
+      {errors?.length ? (
+        <div id={`${id}-error`} role="alert" className="space-y-1">
+          {errors.map((message) => (
+            <p key={message} className="text-sm text-destructive">
+              {message}
+            </p>
+          ))}
+        </div>
+      ) : null}
+      {warnings?.length ? (
+        <div id={`${id}-warning`} className="space-y-1">
+          {warnings.map((message) => (
+            <p key={message} className="text-sm text-amber-700">
+              {message}
+            </p>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -258,10 +317,17 @@ function SwitchField({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <Switch id={id} checked={checked} onCheckedChange={onChange} />
+      <Switch
+        id={id}
+        checked={checked}
+        onCheckedChange={onChange}
+        aria-describedby={`${id}-hint`}
+      />
       <div className="space-y-1">
         <Label htmlFor={id}>{label}</Label>
-        <p className="text-sm text-muted-foreground">{hint}</p>
+        <p id={`${id}-hint`} className="text-sm text-muted-foreground">
+          {hint}
+        </p>
       </div>
     </div>
   );

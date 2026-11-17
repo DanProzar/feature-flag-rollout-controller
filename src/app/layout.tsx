@@ -16,7 +16,8 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Feature-flag rollout controller",
+  // Pages set their own `title`; `/` (the flags list) uses the default.
+  title: { template: "%s · Feature flags", default: "Flags · Feature flags" },
   description:
     "Percentage rollouts, cohorts, kill switch and sticky assignments",
 };

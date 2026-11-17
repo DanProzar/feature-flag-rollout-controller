@@ -34,3 +34,10 @@ export function itemsToCohorts(items: readonly string[]): string[] {
   const cohorts = items.map((item) => (createdCohort(item) ?? item).trim());
   return [...new Set(cohorts.filter(Boolean))];
 }
+
+/** The cohort catalogue as editor options: key and name only, so client props stay small. */
+export function cohortOptions(
+  cohorts: readonly { key: string; name: string }[],
+): { key: string; name: string }[] {
+  return cohorts.map(({ key, name }) => ({ key, name }));
+}

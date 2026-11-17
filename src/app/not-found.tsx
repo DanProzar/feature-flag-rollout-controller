@@ -1,4 +1,5 @@
 import { SearchX } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -9,6 +10,8 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+
+export const metadata: Metadata = { title: "Not found" };
 
 /** Unknown URLs, and `notFound()` for unknown or invalid flag keys. */
 export default function NotFound() {

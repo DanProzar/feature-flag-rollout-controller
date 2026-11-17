@@ -37,6 +37,7 @@ export function CohortEditor({
   catalogue,
   invalid = false,
   disabled = false,
+  describedBy,
 }: {
   id: string;
   value: string[];
@@ -44,6 +45,8 @@ export function CohortEditor({
   catalogue: CohortOption[];
   invalid?: boolean;
   disabled?: boolean;
+  /** The input's `aria-describedby`: ids of the field's hint and messages. */
+  describedBy?: string;
 }) {
   const [query, setQuery] = useState("");
   const anchor = useComboboxAnchor();
@@ -79,6 +82,7 @@ export function CohortEditor({
           id={id}
           placeholder={value.length ? "" : "Add a cohort…"}
           aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
         />
       </ComboboxChips>
       <ComboboxContent anchor={anchor}>

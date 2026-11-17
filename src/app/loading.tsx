@@ -11,8 +11,11 @@ export default function Loading() {
       </div>
       <div className="rounded-lg border">
         <div className="flex h-10 items-center gap-6 border-b px-2">
-          {["w-16", "w-14", "w-14", "w-12", "w-16", "w-16"].map((width, i) => (
+          {["w-16", "w-14", "w-14"].map((width, i) => (
             <Skeleton key={i} className={`h-4 ${width}`} />
+          ))}
+          {["w-12", "w-16", "w-16"].map((width, i) => (
+            <Skeleton key={i} className={`hidden h-4 sm:block ${width}`} />
           ))}
         </div>
         {Array.from({ length: 5 }, (_, i) => (
@@ -23,7 +26,7 @@ export default function Loading() {
             <Skeleton className="h-4 w-28" />
             <Skeleton className="h-5 w-16" />
             <Skeleton className="h-4 w-10" />
-            <Skeleton className="h-5 w-14" />
+            <Skeleton className="hidden h-5 w-14 sm:block" />
             <Skeleton className="hidden h-5 w-32 sm:block" />
             <Skeleton className="ml-auto size-6" />
           </div>

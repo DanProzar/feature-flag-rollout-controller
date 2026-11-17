@@ -1,8 +1,9 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { DemoPage } from "@/components/demo/demo-page";
 import { DEMO_USER_COOKIE, getServices, resolveDemoUser } from "@/server";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Demo" };
 
 /** Loads the flags and users; every evaluation happens in the browser, like a client app. */
 export default async function Demo() {

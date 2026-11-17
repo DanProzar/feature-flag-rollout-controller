@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   cohortItems,
+  cohortOptions,
   createdCohort,
   createItem,
   itemsToCohorts,
@@ -50,5 +51,18 @@ describe("itemsToCohorts", () => {
     expect(
       itemsToCohorts(["admin", createItem(" beta "), "beta", "admin", " "]),
     ).toEqual(["admin", "beta"]);
+  });
+});
+
+describe("cohortOptions", () => {
+  it("keeps only key and name, in order", () => {
+    const catalogue = [
+      { key: "admin", name: "Admins", description: "Staff" },
+      { key: "tester", name: "Testers", description: "QA" },
+    ];
+    expect(cohortOptions(catalogue)).toStrictEqual([
+      { key: "admin", name: "Admins" },
+      { key: "tester", name: "Testers" },
+    ]);
   });
 });

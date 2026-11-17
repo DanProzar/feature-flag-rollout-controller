@@ -1,11 +1,5 @@
-import { Users } from "lucide-react";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import type { Metadata } from "next";
+import { NoUsersEmpty } from "@/components/no-users-empty";
 import { UserCohortsRow } from "@/components/user-cohorts-row";
 import {
   Table,
@@ -14,9 +8,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cohortOptions } from "@/lib/cohort-options";
 import { getServices } from "@/server";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Users" };
 
 export default async function UsersPage() {
   const services = await getServices();
@@ -24,7 +19,6 @@ export default async function UsersPage() {
     services.catalog.users(),
     services.catalog.cohorts(),
   ]);
-  const cohortOptions = cohorts.map(({ key, name }) => ({ key, name }));
 
   return (
     <div className="space-y-4">
@@ -37,25 +31,14 @@ export default async function UsersPage() {
       </div>
 
       {users.length === 0 ? (
-        <Empty className="border">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Users />
-            </EmptyMedia>
-            <EmptyTitle>No users</EmptyTitle>
-            <EmptyDescription>
-              Run <code className="font-mono">npm run seed</code> to add the
-              demo users.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <NoUsersEmpty />
       ) : (
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>User id</TableHead>
+                <TableHead className="hidden md:table-cell">User id</TableHead>
                 <TableHead className="w-1/2">Cohorts</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -68,7 +51,7 @@ export default async function UsersPage() {
                 <UserCohortsRow
                   key={JSON.stringify(user)}
                   user={user}
-                  cohorts={cohortOptions}
+                  cohorts={cohortOptions(cohorts)}
                 />
               ))}
             </TableBody>

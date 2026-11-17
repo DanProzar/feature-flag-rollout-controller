@@ -98,8 +98,12 @@ export function Storefront({ model }: { model: StorefrontModel }) {
               aria-live="polite"
               className="flex items-center gap-1 text-sm font-medium"
             >
-              <ShoppingCart className="size-4" aria-label="Cart" />
+              <ShoppingCart className="size-4" aria-hidden />
+              <span className="sr-only">Cart:</span>
               <span className="tabular-nums">{cartItems}</span>
+              <span className="sr-only">
+                {cartItems === 1 ? "item" : "items"}
+              </span>
             </span>
           </div>
         </div>
@@ -261,11 +265,10 @@ export function Storefront({ model }: { model: StorefrontModel }) {
                 </button>
               </>
             )}
-            {checkoutMessage && (
-              <p aria-live="polite" className="text-xs font-medium">
-                {checkoutMessage}
-              </p>
-            )}
+            {/* Always mounted (hidden while empty), so each message is announced. */}
+            <p aria-live="polite" className="text-xs font-medium empty:hidden">
+              {checkoutMessage}
+            </p>
           </div>
         </Slot>
 
@@ -279,11 +282,10 @@ export function Storefront({ model }: { model: StorefrontModel }) {
           <span>© Acme Store</span>
           {!model.assistant && (
             <span className="flex flex-wrap items-center gap-2">
-              {supportMessage && (
-                <span aria-live="polite">
-                  Thanks — support will email you within a day.
-                </span>
-              )}
+              <span aria-live="polite" className="empty:hidden">
+                {supportMessage &&
+                  "Thanks — support will email you within a day."}
+              </span>
               <button
                 type="button"
                 onClick={() => setSupportMessage(true)}

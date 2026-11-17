@@ -1,11 +1,11 @@
 "use client";
 
-import { UserX } from "lucide-react";
 import { useRef, useState } from "react";
 import { type CohortOption, CohortEditor } from "@/components/cohort-editor";
+import { EnabledBadge } from "@/components/enabled-badge";
 import { ErrorAlert } from "@/components/error-alert";
+import { NoUsersEmpty } from "@/components/no-users-empty";
 import { PendingButton } from "@/components/pending-button";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -13,29 +13,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { type UserOption, UserSelect } from "@/components/user-select";
 import { evaluateFlag, type EvaluateFlagResult } from "@/lib/api-client";
-
-export interface TryItUser {
-  userId: string;
-  name: string;
-  cohorts: string[];
-}
 
 /**
  * Evaluates the flag for a seeded user through the real evaluate endpoint, sending the user's id
@@ -49,7 +30,7 @@ export function TryIt({
 }: {
   flagKey: string;
   sticky: boolean;
-  users: TryItUser[];
+  users: UserOption[];
   cohorts: CohortOption[];
 }) {
   const [userId, setUserId] = useState<string | null>(null);
@@ -58,9 +39,6 @@ export function TryIt({
   const [pending, setPending] = useState(false);
   // Only the latest request may show its answer; changing the inputs makes older ones stale.
   const requestRef = useRef(0);
-
-  const items = users.map((user) => ({ value: user.userId, label: user.name }));
-  const selected = users.find((user) => user.userId === userId);
 
   async function evaluate(event: React.FormEvent) {
     event.preventDefault();
@@ -86,7 +64,9 @@ export function TryIt({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Try it</CardTitle>
+        <CardTitle>
+          <h2>Try it</h2>
+        </CardTitle>
         <CardDescription>
           Evaluate this flag for a user, exactly as a client application would.
           {sticky &&
@@ -95,52 +75,24 @@ export function TryIt({
       </CardHeader>
       <CardContent>
         {users.length === 0 ? (
-          <Empty className="p-4">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <UserX />
-              </EmptyMedia>
-              <EmptyTitle>No users to evaluate</EmptyTitle>
-              <EmptyDescription>Seed the demo users first.</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+          <NoUsersEmpty className="p-4" />
         ) : (
           <form onSubmit={evaluate} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="try-user">User</Label>
-                <Select
-                  items={items}
+                <UserSelect
+                  id="try-user"
+                  users={users}
                   value={userId}
+                  className="w-full"
                   onValueChange={(value) => {
                     const user = users.find((u) => u.userId === value);
                     setUserId(user?.userId ?? null);
                     setUserCohorts(user ? [...user.cohorts] : []);
                     invalidate();
                   }}
-                >
-                  <SelectTrigger id="try-user" className="w-full">
-                    <SelectValue>
-                      {() =>
-                        selected ? (
-                          selected.name
-                        ) : (
-                          <span className="text-muted-foreground">
-                            Select a user
-                          </span>
-                        )
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.userId} value={user.userId}>
-                        {user.name}
-                        <UserCohorts cohorts={user.cohorts} />
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="try-user-id">User id</Label>
@@ -173,20 +125,15 @@ export function TryIt({
               <PendingButton type="submit" pending={pending} disabled={!userId}>
                 Evaluate
               </PendingButton>
-              {result?.ok && (
-                <div className="flex items-center gap-2" aria-live="polite">
-                  <Badge
-                    className={
-                      result.enabled
-                        ? "bg-emerald-600 text-white"
-                        : "bg-red-600 text-white"
-                    }
-                  >
-                    {result.enabled ? "true" : "false"}
-                  </Badge>
-                  <span className="font-mono text-sm">{result.reason}</span>
-                </div>
-              )}
+              {/* Always mounted, so screen readers announce each new answer. */}
+              <div className="flex items-center gap-2" aria-live="polite">
+                {result?.ok && (
+                  <>
+                    <EnabledBadge enabled={result.enabled} />
+                    <span className="font-mono text-sm">{result.reason}</span>
+                  </>
+                )}
+              </div>
             </div>
             {result && !result.ok && (
               <ErrorAlert
@@ -198,21 +145,5 @@ export function TryIt({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-/** A user's cohorts as small badges in a select option, or "no cohorts". */
-function UserCohorts({ cohorts }: { cohorts: string[] }) {
-  if (cohorts.length === 0) {
-    return <span className="text-xs text-muted-foreground">no cohorts</span>;
-  }
-  return (
-    <span className="flex flex-wrap gap-1">
-      {cohorts.map((cohort) => (
-        <Badge key={cohort} variant="outline" className="font-mono">
-          {cohort}
-        </Badge>
-      ))}
-    </span>
   );
 }

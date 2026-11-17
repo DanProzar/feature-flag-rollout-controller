@@ -1,5 +1,6 @@
 import { Flag } from "lucide-react";
 import Link from "next/link";
+import { EnabledBadge } from "@/components/enabled-badge";
 import { Badge } from "@/components/ui/badge";
 import {
   Empty,
@@ -106,15 +107,7 @@ function FlagRow({
       ) : (
         <>
           <TableCell>
-            <Badge
-              className={
-                evaluation.enabled
-                  ? "bg-emerald-600 text-white"
-                  : "bg-red-600 text-white"
-              }
-            >
-              {evaluation.enabled ? "on" : "off"}
-            </Badge>
+            <EnabledBadge enabled={evaluation.enabled} />
           </TableCell>
           <TableCell className="font-mono text-sm">
             {evaluation.reason}

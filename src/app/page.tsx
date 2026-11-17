@@ -24,8 +24,6 @@ import {
 } from "@/components/ui/table";
 import { getServices } from "@/server";
 
-export const dynamic = "force-dynamic";
-
 export default async function FlagsPage() {
   const flags = await (await getServices()).flags.list();
 
@@ -65,9 +63,9 @@ export default async function FlagsPage() {
                 <TableHead>Key</TableHead>
                 <TableHead>State</TableHead>
                 <TableHead className="text-right">Rollout</TableHead>
-                <TableHead>Sticky</TableHead>
-                <TableHead>Include</TableHead>
-                <TableHead>Exclude</TableHead>
+                <TableHead className="hidden sm:table-cell">Sticky</TableHead>
+                <TableHead className="hidden sm:table-cell">Include</TableHead>
+                <TableHead className="hidden sm:table-cell">Exclude</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -90,17 +88,17 @@ export default async function FlagsPage() {
                   <TableCell className="text-right tabular-nums">
                     {flag.percentage}%
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     {flag.sticky ? (
                       <Badge variant="outline">Sticky</Badge>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <CohortBadges cohorts={flag.includeCohorts} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <CohortBadges
                       cohorts={flag.excludeCohorts}
                       variant="destructive"
