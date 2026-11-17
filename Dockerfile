@@ -9,7 +9,7 @@ RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 FROM deps AS seed
 COPY . .
 USER node
-CMD ["npx", "tsx", "src/data/seed.cli.ts"]
+CMD ["node_modules/.bin/tsx", "src/data/seed.cli.ts"]
 
 FROM node:24-alpine AS build
 WORKDIR /app
