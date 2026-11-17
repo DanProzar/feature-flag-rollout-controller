@@ -11,10 +11,19 @@ export const FlagKeySchema = z
     "Must be 1–100 characters of a-z, 0-9, '.', '_' or '-', starting with a letter or digit",
   );
 
-/** Cohort keys: each trimmed and non-empty; duplicates removed, first occurrence order kept. */
+/** Longest accepted `userId`, cohort key or `X-User-Id`, after trimming. */
+export const MAX_ID_LENGTH = 200;
+/** Most cohorts in one list, after de-duplication. */
+export const MAX_COHORTS = 100;
+
+/** A trimmed, non-empty id of at most `MAX_ID_LENGTH` characters. */
+const IdSchema = z.string().trim().min(1).max(MAX_ID_LENGTH);
+
+/** Cohort keys: each an id; duplicates removed, first occurrence order kept; at most `MAX_COHORTS`. */
 const CohortsSchema = z
-  .array(z.string().trim().min(1))
-  .transform((cohorts) => [...new Set(cohorts)]);
+  .array(IdSchema)
+  .transform((cohorts) => [...new Set(cohorts)])
+  .pipe(z.array(z.string()).max(MAX_COHORTS));
 
 /** Every mutable flag field; all required, no defaults (the body fully replaces the flag). */
 export const PutFlagBodySchema = z.object({
@@ -27,10 +36,13 @@ export const PutFlagBodySchema = z.object({
 export type PutFlagBody = z.infer<typeof PutFlagBodySchema>;
 
 export const EvaluateBodySchema = z.object({
-  userId: z.string().trim().min(1),
+  userId: IdSchema,
   cohorts: CohortsSchema.default([]),
 });
 export type EvaluateBody = z.infer<typeof EvaluateBodySchema>;
+
+/** A user id as it appears in `/api/users/:userId/cohorts`: a UUID (seed and created users are v7). */
+export const UserIdSchema = z.uuid("Must be a UUID");
 
 /** The body of `PUT /api/users/:userId/cohorts`: the user's full cohort list. */
 export const UserCohortsBodySchema = z.object({ cohorts: CohortsSchema });

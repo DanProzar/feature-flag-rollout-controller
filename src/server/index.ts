@@ -25,6 +25,7 @@ export {
   handle,
   parseJson,
   parseKey,
+  parseUserId,
 } from "./http";
 export type { ResetService } from "./reset";
 export { createResetService } from "./reset";
@@ -37,7 +38,10 @@ export type {
 export {
   EvaluateBodySchema,
   FlagKeySchema,
+  MAX_COHORTS,
+  MAX_ID_LENGTH,
   PutFlagBodySchema,
   ResetBodySchema,
   UserCohortsBodySchema,
+  UserIdSchema,
 } from "./schemas";

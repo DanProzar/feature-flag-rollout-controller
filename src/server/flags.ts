@@ -26,8 +26,8 @@ export interface FlagService {
    */
   delete(key: string, actorId: string | null): Promise<Flag | null>;
   /**
-   * Evaluates the flag `key` for a user, reading the sticky assignment only for sticky flags and
-   * storing the first percentage result of a sticky flag.
+   * Evaluates the flag `key` for a user. The sticky assignment is read only when a sticky flag
+   * reaches the percentage rule, and that rule's first result for a sticky flag is stored.
    */
   evaluate(key: string, ctx: EvaluateBody): Promise<Evaluation>;
   /** The audit entries for `key`, oldest first; `[]` when there are none. */
@@ -59,6 +59,9 @@ export function createFlagService({
     async put(key, body, actorId) {
       const after: Flag = { key, ...body };
       const before = await flags.upsert(after);
+      // A new flag starts fresh, even if an evaluation racing an earlier delete or reset stored
+      // an assignment after that delete had cleared them.
+      if (!before) await assignments.deleteByFlag(key);
       // Every PUT is audited, even when nothing changed.
       await audit.append({ at: clock.now(), key, actorId, before, after });
       return after;
@@ -81,10 +84,14 @@ export function createFlagService({
 
     async evaluate(key, { userId, cohorts }) {
       const flag = await flags.get(key);
-      const stored = flag?.sticky
-        ? await assignments.get(key, userId)
-        : undefined;
-      const result = evaluate(flag, { userId, cohorts }, stored);
+      const ctx = { userId, cohorts };
+      // Kill, exclude and include never use a stored value, so it is read only when a sticky
+      // flag's answer would come from the percentage rule (`persist`): one round trip fewer.
+      let result = evaluate(flag, ctx);
+      if (result.persist) {
+        const stored = await assignments.get(key, userId);
+        if (stored !== undefined) result = evaluate(flag, ctx, stored);
+      }
       if (!result.persist) {
         return { enabled: result.enabled, reason: result.reason };
       }

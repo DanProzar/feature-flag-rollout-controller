@@ -7,7 +7,7 @@ export async function ensureIndexes(db: Db): Promise<void> {
     db
       .collection("assignments")
       .createIndex({ flagKey: 1, userId: 1 }, { unique: true }),
-    db.collection("audit").createIndex({ key: 1, at: 1 }),
+    db.collection("audit").createIndex({ key: 1, at: 1, _id: 1 }),
     db.collection("users").createIndex({ userId: 1 }, { unique: true }),
     db.collection("cohorts").createIndex({ key: 1 }, { unique: true }),
   ]);

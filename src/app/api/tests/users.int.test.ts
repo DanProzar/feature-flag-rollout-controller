@@ -37,6 +37,16 @@ describe("PUT /api/users/:userId/cohorts", () => {
     ).toEqual({ status: 404, body: { error: "User not found" } });
   });
 
+  it.each(["not-a-uuid", "alice"])(
+    "answers 400 Invalid user id for %j before reading the body",
+    async (userId) => {
+      const res = await putCohorts(userId, { cohorts: "not a list" });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("Invalid user id");
+      expect(Object.keys(res.body.issues)).toEqual(["userId"]);
+    },
+  );
+
   it.each([{}, { cohorts: "admin" }, { cohorts: [" "] }])(
     "answers 400 for %j without changing the user",
     async (body) => {

@@ -3,18 +3,19 @@ import {
   getServices,
   handle,
   parseJson,
+  parseUserId,
   UserCohortsBodySchema,
 } from "@/server";
 
 export const dynamic = "force-dynamic";
 
-/** Replaces the cohorts of the user `userId`; 404 when there is no such user. */
+/** Replaces the cohorts of the user `userId`; 400 for a malformed id, 404 for an unknown user. */
 export const PUT = handle(
   async (
     request: NextRequest,
     ctx: RouteContext<"/api/users/[userId]/cohorts">,
   ) => {
-    const { userId } = await ctx.params;
+    const userId = parseUserId((await ctx.params).userId);
     const { cohorts } = await parseJson(request, UserCohortsBodySchema);
     const { catalog } = await getServices();
     const user = await catalog.setUserCohorts(userId, cohorts);

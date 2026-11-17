@@ -41,10 +41,10 @@ export function createAssignmentsRepository(
         return AssignmentDocumentSchema.parse(doc).value;
       } catch (error) {
         // Two concurrent upserts can both miss and race on the unique index; the loser re-reads
-        // the winner's value.
+        // the winner's value. A delete or reset may remove it in between; answer `value` then.
         if (!isDuplicateKeyError(error)) throw error;
         const doc = await assignments.findOne({ flagKey, userId });
-        return AssignmentDocumentSchema.parse(doc).value;
+        return doc ? AssignmentDocumentSchema.parse(doc).value : value;
       }
     },
 

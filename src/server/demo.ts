@@ -37,14 +37,13 @@ export type SetDemoUserCookie = (
  * anything else is a failure and the cookie is left unchanged.
  */
 export async function selectDemoUser(
-  catalog: Pick<CatalogService, "users">,
+  catalog: Pick<CatalogService, "user">,
   userId: unknown,
   setCookie: SetDemoUserCookie,
 ): Promise<SelectDemoUserResult> {
   const parsed = DemoUserIdSchema.safeParse(userId);
   if (!parsed.success) return { ok: false, error: "Invalid user id" };
-  const users = await catalog.users();
-  if (!users.some((user) => user.userId === parsed.data)) {
+  if (!(await catalog.user(parsed.data))) {
     return { ok: false, error: "Unknown user" };
   }
   setCookie(DEMO_USER_COOKIE, parsed.data, DEMO_USER_COOKIE_OPTIONS);

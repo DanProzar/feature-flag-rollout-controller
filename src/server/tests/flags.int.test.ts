@@ -285,6 +285,52 @@ describe("flag service evaluate", () => {
     },
   );
 
+  it.each(OVERRIDES)(
+    "answers %j for a sticky flag without reading assignments",
+    async (override, cohorts, expected) => {
+      const real = createAssignmentsRepository(t.db, clock);
+      const spy = {
+        get: vi.fn(real.get),
+        insertIfAbsent: vi.fn(real.insertIfAbsent),
+        deleteByFlag: real.deleteByFlag,
+      };
+      const flags = service(spy);
+      await flags.put("demo", { ...BODY, ...override }, null);
+      expect(
+        await flags.evaluate("demo", { userId: "u1", cohorts }),
+      ).toStrictEqual(expected);
+      expect(spy.get).not.toHaveBeenCalled();
+      expect(spy.insertIfAbsent).not.toHaveBeenCalled();
+    },
+  );
+
+  it("starts a re-created flag fresh, even after a late write from a racing evaluation", async () => {
+    const flags = service();
+    const flag = await flags.put("demo", BODY, null);
+    const opposite = !evaluate(flag, USER).enabled;
+    await flags.delete("demo", null);
+    // An evaluation that loaded the flag before the delete stores its result afterwards.
+    await createAssignmentsRepository(t.db, clock).insertIfAbsent(
+      "demo",
+      "u1",
+      opposite,
+    );
+    await flags.put("demo", BODY, null);
+    expect(await assignmentCount()).toBe(0);
+    expect(await flags.evaluate("demo", USER)).toStrictEqual({
+      enabled: !opposite,
+      reason: "PERCENTAGE",
+    });
+  });
+
+  it("keeps assignments when an existing flag is replaced", async () => {
+    const flags = service();
+    await flags.put("demo", BODY, null);
+    await flags.evaluate("demo", USER);
+    await flags.put("demo", { ...BODY, percentage: 10 }, null);
+    expect(await assignmentCount()).toBe(1);
+  });
+
   it("never exposes persist", async () => {
     const flags = service();
     await flags.put("demo", BODY, null);

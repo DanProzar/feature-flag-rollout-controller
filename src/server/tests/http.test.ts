@@ -8,7 +8,10 @@ import {
   handle,
   parseJson,
   parseKey,
+  parseUserId,
 } from "../http";
+
+import { MAX_ID_LENGTH } from "../schemas";
 
 const Schema = z.object({ name: z.string().min(1), count: z.int() });
 
@@ -61,12 +64,18 @@ describe("parseJson", () => {
     expect(body.issues.name).toEqual([expect.any(String)]);
   });
 
-  it("throws for valid JSON that is not an object", async () => {
-    expect(await answer(() => parseJson(jsonRequest("[1]"), Schema))).toEqual({
-      status: 400,
-      body: { error: "Invalid request body", issues: {} },
-    });
-  });
+  it.each(["[1]", '"x"', "null"])(
+    "reports valid JSON that is not an object (%s) under issues.body",
+    async (json) => {
+      expect(await answer(() => parseJson(jsonRequest(json), Schema))).toEqual({
+        status: 400,
+        body: {
+          error: "Invalid request body",
+          issues: { body: [expect.stringContaining("expected object")] },
+        },
+      });
+    },
+  );
 });
 
 describe("parseKey", () => {
@@ -84,6 +93,27 @@ describe("parseKey", () => {
       },
     });
   });
+});
+
+describe("parseUserId", () => {
+  const ID = "019a8f00-0000-7000-8000-000000000001";
+
+  it("returns a UUID", () => {
+    expect(parseUserId(ID)).toBe(ID);
+  });
+
+  it.each(["not-a-uuid", "", `${ID}x`])(
+    "throws Invalid user id for %j",
+    async (userId) => {
+      expect(await answer(() => parseUserId(userId))).toEqual({
+        status: 400,
+        body: {
+          error: "Invalid user id",
+          issues: { userId: [expect.any(String)] },
+        },
+      });
+    },
+  );
 });
 
 describe("handle", () => {
@@ -126,6 +156,24 @@ describe("actorIdFrom", () => {
   it("is the trimmed X-User-Id header", () => {
     expect(actorIdFrom(jsonRequest("{}", { "X-User-Id": " dev-1 " }))).toBe(
       "dev-1",
+    );
+  });
+
+  it("accepts a header of MAX_ID_LENGTH characters", () => {
+    const id = "a".repeat(MAX_ID_LENGTH);
+    expect(actorIdFrom(jsonRequest("{}", { "X-User-Id": id }))).toBe(id);
+  });
+
+  it("throws Invalid X-User-Id header when it is longer", async () => {
+    const headers = { "X-User-Id": "a".repeat(MAX_ID_LENGTH + 1) };
+    expect(await answer(() => actorIdFrom(jsonRequest("{}", headers)))).toEqual(
+      {
+        status: 400,
+        body: {
+          error: "Invalid X-User-Id header",
+          issues: { "x-user-id": [expect.any(String)] },
+        },
+      },
     );
   });
 

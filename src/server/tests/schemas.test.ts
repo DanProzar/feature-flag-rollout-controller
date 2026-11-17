@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   EvaluateBodySchema,
   FlagKeySchema,
+  MAX_COHORTS,
+  MAX_ID_LENGTH,
   PutFlagBodySchema,
   ResetBodySchema,
   UserCohortsBodySchema,
+  UserIdSchema,
 } from "../schemas";
 
 const BODY = {
@@ -126,6 +129,23 @@ describe("EvaluateBodySchema", () => {
     },
   );
 
+  it("accepts a userId and cohorts of MAX_ID_LENGTH characters, not longer", () => {
+    const max = "a".repeat(MAX_ID_LENGTH);
+    expect(
+      EvaluateBodySchema.safeParse({ userId: ` ${max} `, cohorts: [max] })
+        .success,
+    ).toBe(true);
+    const over = `${max}a`;
+    expect(
+      failedFields(EvaluateBodySchema.safeParse({ userId: over })),
+    ).toEqual(["userId"]);
+    expect(
+      failedFields(
+        EvaluateBodySchema.safeParse({ userId: "u1", cohorts: [over] }),
+      ),
+    ).toEqual(["cohorts"]);
+  });
+
   it("strips unknown fields", () => {
     expect(
       EvaluateBodySchema.parse({ userId: "u1", cohorts: [], extra: 1 }),
@@ -146,6 +166,45 @@ describe("UserCohortsBodySchema", () => {
       expect(failedFields(UserCohortsBodySchema.safeParse(body))).toEqual([
         "cohorts",
       ]);
+    },
+  );
+});
+
+describe("cohort list limit", () => {
+  const cohorts = (n: number) => Array.from({ length: n }, (_, i) => `c${i}`);
+
+  it("accepts MAX_COHORTS distinct cohorts", () => {
+    expect(
+      UserCohortsBodySchema.parse({ cohorts: cohorts(MAX_COHORTS) }).cohorts,
+    ).toHaveLength(MAX_COHORTS);
+  });
+
+  it("rejects one more", () => {
+    const result = PutFlagBodySchema.safeParse({
+      ...BODY,
+      excludeCohorts: cohorts(MAX_COHORTS + 1),
+    });
+    expect(failedFields(result)).toEqual(["excludeCohorts"]);
+  });
+
+  it("counts after de-duplication", () => {
+    const list = [...cohorts(MAX_COHORTS), "c0"];
+    expect(UserCohortsBodySchema.parse({ cohorts: list }).cohorts).toHaveLength(
+      MAX_COHORTS,
+    );
+  });
+});
+
+describe("UserIdSchema", () => {
+  it("accepts a UUID v7", () => {
+    const id = "019a8f00-0000-7000-8000-000000000001";
+    expect(UserIdSchema.parse(id)).toBe(id);
+  });
+
+  it.each(["u1", "", "019a8f00-0000-7000-8000-00000000000"])(
+    "rejects %j",
+    (id) => {
+      expect(UserIdSchema.safeParse(id).success).toBe(false);
     },
   );
 });

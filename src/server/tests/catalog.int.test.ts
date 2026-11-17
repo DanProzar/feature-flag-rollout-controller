@@ -39,6 +39,16 @@ describe("catalog service", () => {
     );
   });
 
+  it("returns one user by id, or null for an unknown id", async () => {
+    await seed(t.db, frozenClock(new Date("2026-01-01T00:00:00.000Z")));
+    const catalog = service();
+    const [alice] = SEED_USERS;
+    expect(await catalog.user(alice.userId)).toStrictEqual(alice);
+    expect(
+      await catalog.user("01a1dc80-ffff-7000-8000-000000000000"),
+    ).toBeNull();
+  });
+
   it("sets a user's cohorts, or returns null for an unknown user", async () => {
     await seed(t.db, frozenClock(new Date("2026-01-01T00:00:00.000Z")));
     const catalog = service();

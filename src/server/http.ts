@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { FlagKeySchema } from "./schemas";
+import { FlagKeySchema, MAX_ID_LENGTH, UserIdSchema } from "./schemas";
 
 // Helpers shared by the route handlers. The parsers throw `BadRequestError`; `handle` turns it into
 // a 400 with the body `{ error, issues }`, where `issues` maps field names to messages. Any other
@@ -49,9 +49,13 @@ export async function parseJson<S extends z.ZodType>(
   }
   const result = schema.safeParse(json);
   if (!result.success) {
+    // A body that is not an object has no field errors; its message goes under `body`.
+    const { formErrors, fieldErrors } = z.flattenError(result.error);
     throw new BadRequestError(
       "Invalid request body",
-      z.flattenError(result.error).fieldErrors,
+      formErrors.length > 0
+        ? { ...fieldErrors, body: formErrors }
+        : fieldErrors,
     );
   }
   return result.data;
@@ -68,7 +72,27 @@ export function parseKey(key: string): string {
   return result.data;
 }
 
-/** The `X-User-Id` header, trimmed; `null` when it is absent or blank. */
+/** `userId` when it is a valid user id (a UUID); throws `BadRequestError` otherwise. */
+export function parseUserId(userId: string): string {
+  const result = UserIdSchema.safeParse(userId);
+  if (!result.success) {
+    throw new BadRequestError("Invalid user id", {
+      userId: result.error.issues.map((issue) => issue.message),
+    });
+  }
+  return result.data;
+}
+
+/**
+ * The `X-User-Id` header, trimmed; `null` when it is absent or blank. Throws `BadRequestError`
+ * when it is longer than `MAX_ID_LENGTH`, since it is stored in every audit entry.
+ */
 export function actorIdFrom(request: NextRequest): string | null {
-  return request.headers.get("x-user-id")?.trim() || null;
+  const actorId = request.headers.get("x-user-id")?.trim() || null;
+  if (actorId && actorId.length > MAX_ID_LENGTH) {
+    throw new BadRequestError("Invalid X-User-Id header", {
+      "x-user-id": [`Must be at most ${MAX_ID_LENGTH} characters`],
+    });
+  }
+  return actorId;
 }

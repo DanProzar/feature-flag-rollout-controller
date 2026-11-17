@@ -7,7 +7,7 @@ const t = useTestDb();
 const EXPECTED = [
   { collection: "flags", key: { key: 1 }, unique: true },
   { collection: "assignments", key: { flagKey: 1, userId: 1 }, unique: true },
-  { collection: "audit", key: { key: 1, at: 1 }, unique: false },
+  { collection: "audit", key: { key: 1, at: 1, _id: 1 }, unique: false },
   { collection: "users", key: { userId: 1 }, unique: true },
   { collection: "cohorts", key: { key: 1 }, unique: true },
 ];

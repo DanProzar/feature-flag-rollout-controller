@@ -127,6 +127,21 @@ describe("assignments repository", () => {
       );
     });
 
+    it("answers the caller's value when the winner was removed before the re-read", async () => {
+      const duplicate = new MongoServerError({
+        message: "E11000 duplicate key error",
+        code: 11000,
+      });
+      // Nothing is stored: a delete or reset removed the winner after the duplicate-key error.
+      const assignments = createAssignmentsRepository(
+        dbFailingUpsertOnce(duplicate),
+        frozenClock(T1),
+      );
+      expect(await assignments.insertIfAbsent("new-checkout", "u1", true)).toBe(
+        true,
+      );
+    });
+
     it("rethrows other errors", async () => {
       const assignments = createAssignmentsRepository(
         dbFailingUpsertOnce(new Error("network down")),
