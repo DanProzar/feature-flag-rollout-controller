@@ -9,6 +9,14 @@ export {
   getServices,
   setServicesForTesting,
 } from "./container";
+export type { SelectDemoUserResult, SetDemoUserCookie } from "./demo";
+export {
+  DEMO_USER_COOKIE,
+  DEMO_USER_COOKIE_OPTIONS,
+  DemoUserIdSchema,
+  resolveDemoUser,
+  selectDemoUser,
+} from "./demo";
 export type { Evaluation, FlagService } from "./flags";
 export { createFlagService } from "./flags";
 export {
