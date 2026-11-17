@@ -1,7 +1,6 @@
 "use client";
 
 import { RefreshCw, Users } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { selectDemoUser } from "@/app/demo/actions";
 import { type ActorOption, ActorSelect } from "@/components/actor-select";
@@ -26,7 +25,9 @@ import {
 
 // Behaves like a client application: every stored flag is evaluated for the selected user through
 // the public evaluate endpoint, in parallel, on mount, on switch and on Refresh. Each round is a
-// "run"; answers from an older run (e.g. a user switched away from) are discarded.
+// "run" whose answers are shown together once all have arrived, so the grid and storefront swap in
+// one step instead of flickering through skeletons and the legacy store; until then the previous
+// run's answers stay. Answers from an older run (e.g. a user switched away from) are discarded.
 
 interface Results {
   run: number;
@@ -53,25 +54,23 @@ export function DemoPage({
   // The server re-renders after the cookie is set; a user missing from fresh props falls back.
   const user = users.find((u) => u.userId === userId) ?? users[0] ?? null;
   const flagKeys = flags.map(({ key }) => key);
-  const evaluations = results.run === run ? results.byKey : {};
-  const pending =
-    user !== null && flagKeys.some((key) => !(key in evaluations));
+  // Rows missing from the shown run (first load, a newly created flag) render as loading.
+  const evaluations = results.byKey;
+  const pending = user !== null && results.run !== run;
 
   const evaluate = useCallback(
     (target: ActorOption, keys: string[], forRun: number) => {
       const ctx = { userId: target.userId, cohorts: target.cohorts };
-      for (const key of keys) {
-        void evaluateFlag(key, ctx).then((result) => {
-          if (runRef.current !== forRun) return;
-          setResults((prev) => ({
-            run: forRun,
-            byKey: {
-              ...(prev.run === forRun ? prev.byKey : {}),
-              [key]: toDemoEvaluation(result),
-            },
-          }));
-        });
-      }
+      // `evaluateFlag` never rejects: a failed call is an `error` row.
+      void Promise.all(
+        keys.map(async (key) => [
+          key,
+          toDemoEvaluation(await evaluateFlag(key, ctx)),
+        ]),
+      ).then((entries) => {
+        if (runRef.current !== forRun) return;
+        setResults({ run: forRun, byKey: Object.fromEntries(entries) });
+      });
     },
     [],
   );
@@ -135,15 +134,7 @@ export function DemoPage({
               value={user.userId}
               onValueChange={selectUser}
             />
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <CohortBadges cohorts={user.cohorts} />
-              <Link
-                href="/users"
-                className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              >
-                Edit cohorts
-              </Link>
-            </div>
+            <CohortBadges cohorts={user.cohorts} />
             <PendingButton
               variant="outline"
               className="ml-auto"

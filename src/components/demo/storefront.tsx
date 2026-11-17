@@ -1,5 +1,7 @@
-import { MessageCircle, Search, Zap } from "lucide-react";
-import type { ReactNode } from "react";
+"use client";
+
+import { MessageCircle, Search, ShoppingCart, Zap } from "lucide-react";
+import { type ReactNode, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { StorefrontModel } from "@/lib/demo";
@@ -8,6 +10,7 @@ import { cn } from "@/lib/utils";
 // A fake shop whose features follow the seed flags. The structure never changes: each flag only
 // swaps what fills its slot, so an off feature shows the legacy variant rather than a hole. Dark
 // mode is explicit classes on this card only (no Tailwind dark variant), so the app stays light.
+// "Add to cart" only counts items in the header; nothing else is interactive.
 
 const PRODUCTS = [
   { name: "Trail runner", price: "$89" },
@@ -33,6 +36,7 @@ const DARK: Theme = {
 
 export function Storefront({ model }: { model: StorefrontModel }) {
   const theme = model.darkMode ? DARK : LIGHT;
+  const [cartItems, setCartItems] = useState(0);
 
   return (
     <Card
@@ -54,6 +58,13 @@ export function Storefront({ model }: { model: StorefrontModel }) {
             <Caption flagKey="dark-mode" theme={theme}>
               {model.darkMode ? "dark" : "light"}
             </Caption>
+            <span
+              aria-live="polite"
+              className="flex items-center gap-1 text-sm font-medium"
+            >
+              <ShoppingCart className="size-4" aria-label="Cart" />
+              <span className="tabular-nums">{cartItems}</span>
+            </span>
           </div>
         </div>
         <Slot flagKey="beta-search" theme={theme}>
@@ -103,15 +114,16 @@ export function Storefront({ model }: { model: StorefrontModel }) {
               />
               <div className="text-sm font-medium">{product.name}</div>
               <div className={cn("text-sm", theme.muted)}>{product.price}</div>
-              <div
-                aria-hidden
+              <button
+                type="button"
+                onClick={() => setCartItems((count) => count + 1)}
                 className={cn(
-                  "rounded-md px-2 py-1 text-center text-xs font-medium",
+                  "w-full cursor-pointer rounded-md px-2 py-1 text-center text-xs font-medium transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:outline-none active:opacity-70",
                   theme.button,
                 )}
               >
                 Add to cart
-              </div>
+              </button>
             </div>
           ))}
         </div>

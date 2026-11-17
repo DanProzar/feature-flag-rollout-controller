@@ -233,8 +233,9 @@ not validated against it)
 - **`/demo`** (header link **Demo**): `src/app/demo/page.tsx` loads flags and users and resolves the
   selected user from the cookie; the client `DemoPage` (`src/components/demo`) evaluates every stored
   flag in parallel through `evaluateFlag` (`X-User-Id` = the user, stored cohorts) on mount, on
-  switch and on Refresh, discarding answers from an older round. `FlagGrid` shows key / on-off /
-  reason with per-row skeletons and `Error` badges; `Storefront` renders a fixed layout whose slots
+  switch and on Refresh; a round's answers replace the previous ones together once all have
+  arrived (no flicker), and answers from an older round are discarded. `FlagGrid` shows key /
+  on-off / reason with skeletons on first load and per-row `Error` badges; `Storefront` renders a fixed layout whose slots
   follow `storefrontModel` (`src/lib/demo.ts`: only a successful `enabled: true` counts as on;
   all five off → `legacy`). Its dark variant is explicit classes on the card, never `dark:`.
   `ActorSelect` ("Acting as") is a controlled component used only here; the old `src/lib/actor.ts`
