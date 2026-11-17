@@ -10,13 +10,18 @@ import { cn } from "@/lib/utils";
 // A fake shop whose features follow the seed flags. The structure never changes: each flag only
 // swaps what fills its slot, so an off feature shows the legacy variant rather than a hole. Dark
 // mode is explicit classes on this card only (no Tailwind dark variant), so the app stays light.
-// "Add to cart" only counts items in the header; nothing else is interactive.
+// "Add to cart" counts items in the header and the new checkout's pay buttons empty the cart;
+// nothing else is interactive.
 
 const PRODUCTS = [
   { name: "Trail runner", price: "$89" },
   { name: "Canvas tote", price: "$34" },
   { name: "Wool beanie", price: "$19" },
 ];
+
+/** The storefront's clickable buttons, on top of a theme colour. */
+const BUTTON_CLASS =
+  "cursor-pointer rounded-md px-2.5 py-1 text-center text-xs font-medium transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:outline-none active:opacity-70";
 
 type Theme = Record<"card" | "muted" | "surface" | "button", string>;
 
@@ -37,6 +42,18 @@ const DARK: Theme = {
 export function Storefront({ model }: { model: StorefrontModel }) {
   const theme = model.darkMode ? DARK : LIGHT;
   const [cartItems, setCartItems] = useState(0);
+  const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
+
+  function pay(method: string) {
+    if (cartItems === 0) {
+      setCheckoutMessage("Your cart is empty.");
+      return;
+    }
+    setCheckoutMessage(
+      `${method}: order placed for ${cartItems} item${cartItems === 1 ? "" : "s"}.`,
+    );
+    setCartItems(0);
+  }
 
   return (
     <Card
@@ -116,11 +133,11 @@ export function Storefront({ model }: { model: StorefrontModel }) {
               <div className={cn("text-sm", theme.muted)}>{product.price}</div>
               <button
                 type="button"
-                onClick={() => setCartItems((count) => count + 1)}
-                className={cn(
-                  "w-full cursor-pointer rounded-md px-2 py-1 text-center text-xs font-medium transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:outline-none active:opacity-70",
-                  theme.button,
-                )}
+                onClick={() => {
+                  setCartItems((count) => count + 1);
+                  setCheckoutMessage(null);
+                }}
+                className={cn("w-full", BUTTON_CLASS, theme.button)}
               >
                 Add to cart
               </button>
@@ -137,19 +154,31 @@ export function Storefront({ model }: { model: StorefrontModel }) {
                   One page: address, delivery and payment together.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <span
+                  <button
+                    type="button"
+                    onClick={() => pay("Express pay")}
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium",
+                      "inline-flex items-center gap-1",
+                      BUTTON_CLASS,
                       theme.button,
                     )}
                   >
                     <Zap className="size-3.5" />
                     Express pay
-                  </span>
-                  <span className="rounded-md border border-current px-2.5 py-1 text-xs font-medium">
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => pay("Pay now")}
+                    className={cn("border border-current", BUTTON_CLASS)}
+                  >
                     Pay now
-                  </span>
+                  </button>
                 </div>
+                {checkoutMessage && (
+                  <p aria-live="polite" className="text-xs font-medium">
+                    {checkoutMessage}
+                  </p>
+                )}
               </>
             ) : (
               <>
