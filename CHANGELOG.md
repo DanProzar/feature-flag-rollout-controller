@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-17
+
+- Added a `/demo` page (header link **Demo**) that acts as a client application: for the selected user it evaluates every stored flag through `POST /api/flags/:key/evaluate` in parallel and shows each result and reason in a grid, with Refresh
+- Added a mock "Acme Store" whose checkout, dark mode, search, banner and assistant follow the five seed flags, falling back to a complete legacy storefront (badged) when every feature is off
+- Made every storefront control work locally: search and category filters, Add to cart with a cart count, classic and one-page checkouts that place an order, Contact support and an assistant chat panel
+- Moved the "Acting as" selector to `/demo`, remembering the chosen user in an `httpOnly`, `Secure`, `SameSite=Strict` session cookie (`ff_demo_user`) set by a validating Server Function instead of `localStorage`
+- Fixed flicker on user switch and Refresh by showing each round of results in one step
+- Added the Phase 6 demo page spec, documented the demo page in the README and tech stack, and marked Phase 6 complete
+
 ## 2026-11-16
 
 - Added the admin UI on shadcn/ui: a flags list with kill state, rollout, sticky and cohort badges, where clicking a row opens the flag
