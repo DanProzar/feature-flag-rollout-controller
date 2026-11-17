@@ -15,6 +15,11 @@ const LINKS = [
     label: "Users",
     active: (path: string) => path.startsWith("/users"),
   },
+  {
+    href: "/demo",
+    label: "Demo",
+    active: (path: string) => path.startsWith("/demo"),
+  },
 ];
 
 /** The header's section links, highlighting the current one. */
